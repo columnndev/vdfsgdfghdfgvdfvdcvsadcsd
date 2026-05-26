@@ -3,11 +3,11 @@
 
 const CONFIG = {
     // Cheat Status: "UNDETECTED", "UPDATING", "TESTING", "DETECTED"
-    cheatStatus: "UNDETECTED",
+    cheatStatus: "UPDATING",
     
     // Set to false to disable the 'Download Loader' button in the portal
-    loaderEnabled: true,
+    loaderEnabled: false,
     
     // Message to show if the loader is disabled (e.g., when updating)
-    disabledMessage: "Overwatch just updated to build 149597. We are currently updating offsets. Please check Discord for ETA."
+    disabledMessage: "Overwatch just updated to build 149872. We are currently updating offsets. Please check Discord for ETA."
 };
