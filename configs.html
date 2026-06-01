@@ -303,8 +303,16 @@
 
         async function loadConfigs() {
             configGrid.innerHTML = '<div class="loading-spinner">Loading configs...</div>';
-            allConfigs = await CONFIG_API.listConfigs();
-            renderConfigs(allConfigs);
+            try {
+                allConfigs = await CONFIG_API.listConfigs();
+                if (!allConfigs.length) {
+                    configGrid.innerHTML = '<div class="empty-state"><p>No configs found. (Token may need refresh or GitHub rate limited)</p></div>';
+                } else {
+                    renderConfigs(allConfigs);
+                }
+            } catch(e) {
+                configGrid.innerHTML = `<div class="empty-state"><p>Error: ${e.message}</p></div>`;
+            }
         }
 
         function renderConfigs(configs) {
