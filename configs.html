@@ -324,14 +324,18 @@
                 <div class="config-card">
                     <div class="config-card-header">
                         <span class="config-code">${c.code || ''}</span>
-                        <span class="config-hero-badge">${c.hero || 'General'}</span>
+                        <span class="config-hero-badge">${escHtml(c.hero || 'General')}</span>
                     </div>
-                    <div class="config-label">${escHtml(c.label || 'Unnamed')}</div>
+                    <div class="config-label" style="font-size:1.1rem; font-weight:700; color:white; margin:6px 0 2px;">
+                        ${escHtml(c.hero || 'General')} Config
+                    </div>
                     <div class="config-meta">
                         <span>by ${escHtml(c.author || 'Anonymous')}</span>
                         <span>${c.date || ''}</span>
                     </div>
-                    <button class="copy-code-btn" onclick="copyCode(this, '${c.code}')">${c.code}</button>
+                    <button class="copy-code-btn" onclick="copyCode(this, '${c.code}')" style="margin-top:8px; font-size:1rem; font-weight:700; letter-spacing:2px;">
+                        📋 ${c.code}
+                    </button>
                 </div>
             `).join('');
         }
