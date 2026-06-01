@@ -1,66 +1,50 @@
 // Column Config Cloud API
+// Uses raw.githubusercontent.com for reads (no auth needed, no CORS issues)
+// Uses GitHub API only for writes (upload from in-game via PowerShell)
 const CONFIG_API = {
-    token: atob('Z2hwX0FxZUczT251ckVoYWdNZjVNSG90WUxxWkNtV1UwM0luT0NL'),
     owner: 'columnndev',
     repo:  'column',
+    branch: 'main',
 
-    async _req(method, path, body) {
-        const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`;
-        const res = await fetch(url, {
-            method,
-            headers: {
-                'Authorization': `token ${this.token}`,
-                'Accept': 'application/vnd.github.v3+json',
-                'Content-Type': 'application/json'
-            },
-            body: body ? JSON.stringify(body) : undefined
-        });
-        if (!res.ok) return null;
-        return res.json();
+    _rawUrl(path) {
+        return `https://raw.githubusercontent.com/${this.owner}/${this.repo}/${this.branch}/${path}`;
     },
 
-    _decode(b64) {
+    async _fetchJson(path) {
         try {
-            const clean = b64.replace(/\s/g, '');
-            const bytes = Uint8Array.from(atob(clean), c => c.charCodeAt(0));
-            const str = new TextDecoder().decode(bytes);
-            return JSON.parse(str);
-        } catch(e) {
-            console.warn('decode error:', e);
-            return null;
-        }
+            const res = await fetch(this._rawUrl(path) + '?t=' + Date.now());
+            if (!res.ok) return null;
+            return res.json();
+        } catch(e) { return null; }
     },
 
     async listConfigs() {
         try {
-            const dir = await this._req('GET', 'configs');
+            // Use GitHub API dir listing (needs token) — but only for file names
+            const token = atob('Z2hwX0FxZUczT251ckVoYWdNZjVNSG90WUxxWkNtV1UwM0luT0NL');
+            const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/contents/configs`, {
+                headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+            });
+            if (!res.ok) return [];
+            const dir = await res.json();
             if (!Array.isArray(dir)) return [];
 
-            // Fetch sequentially to avoid rate limits
             const configs = [];
             for (const f of dir) {
                 if (!f.name.endsWith('.json') || f.name === 'COL-TEST.json') continue;
-                try {
-                    const data = await this._req('GET', `configs/${f.name}`);
-                    if (!data || !data.content) continue;
-                    const json = this._decode(data.content);
-                    if (json) configs.push(json);
-                } catch(e) { continue; }
+                // Fetch raw content — no auth, no rate limit
+                const json = await this._fetchJson(`configs/${f.name}`);
+                if (json) configs.push(json);
             }
             return configs.sort((a,b) => (b.date||'').localeCompare(a.date||''));
-        } catch(e) {
-            console.error('listConfigs error:', e);
-            return [];
-        }
+        } catch(e) { return []; }
     },
 
     async loadConfig(code) {
         try {
             code = code.toUpperCase().trim();
             if (!code.startsWith('COL-')) code = 'COL-' + code;
-            const data = await this._req('GET', `configs/${code}.json`);
-            if (!data || !data.content) return null;
-            return this._decode(data.content);
+            return await this._fetchJson(`configs/${code}.json`);
         } catch(e) { return null; }
     }
 };
