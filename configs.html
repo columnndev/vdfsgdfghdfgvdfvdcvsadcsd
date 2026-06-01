@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column - Config Browser</title>
+    <meta property="og:title" content="Column | Config Browser">
+    <meta property="og:description" content="Browse and share community configs for Column.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/columnndev/column/main/logo.png">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="security.js"></script>
+    <script src="config-api.js"></script>
+    <style>
+        .configs-container {
+            min-height: 100vh;
+            padding: 8rem 2rem 4rem;
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .configs-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .configs-header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .configs-header p  { color: var(--text-muted); font-size: 1rem; }
+
+        /* Auth gate */
+        #auth-gate {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 3rem;
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            text-align: center;
+        }
+        #auth-gate p { color: var(--text-muted); }
+
+        /* Search + filter bar */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-bar input {
+            flex: 1;
+            min-width: 180px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            outline: none;
+        }
+        .filter-bar input:focus { border-color: var(--accent-primary); }
+        .filter-bar input::placeholder { color: var(--text-muted); }
+
+        /* Config card grid */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1rem;
+        }
+
+        .config-card {
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .config-card:hover {
+            border-color: rgba(79,70,229,0.5);
+            transform: translateY(-2px);
+        }
+
+        .config-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .config-code {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: 1px;
+        }
+
+        .config-hero-badge {
+            background: rgba(79,70,229,0.15);
+            border: 1px solid rgba(79,70,229,0.3);
+            color: #818cf8;
+            padding: 0.15rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .config-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .config-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .copy-code-btn {
+            width: 100%;
+            padding: 0.6rem;
+            background: rgba(79,70,229,0.1);
+            border: 1px solid rgba(79,70,229,0.3);
+            color: #818cf8;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            letter-spacing: 1px;
+        }
+        .copy-code-btn:hover {
+            background: rgba(79,70,229,0.2);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+        .copy-code-btn.copied {
+            background: rgba(16,185,129,0.1);
+            border-color: rgba(16,185,129,0.4);
+            color: #10b981;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        /* Load by code input */
+        .load-code-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 2rem;
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            align-items: center;
+        }
+        .load-code-bar span {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+        .load-code-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: monospace;
+            font-size: 1rem;
+            outline: none;
+            letter-spacing: 1px;
+        }
+        .load-code-bar input::placeholder { color: #333; }
+    </style>
+</head>
+<body>
+    <div class="ambient-background">
+        <canvas id="rain-canvas"></canvas>
+    </div>
+
+    <header class="navbar" data-aos="fade-down" data-aos-duration="800">
+        <div class="nav-container">
+            <div class="logo-wrapper" style="display: flex; align-items: center; gap: 0.8rem;">
+                <img src="logo.png" alt="Column Logo" class="logo-img" style="height: 40px; width: auto; object-fit: contain; mix-blend-mode: screen;">
+                <span class="logo">COLUMN</span>
+            </div>
+            <nav class="nav-links">
+                <a href="index.html#home">Home</a>
+                <a href="index.html#features">Features</a>
+                <a href="index.html#pricing">Pricing</a>
+                <a href="index.html#faq">FAQ</a>
+                <a href="status.html">Status</a>
+            </nav>
+            <div class="nav-actions">
+                <a href="login.html" class="btn-secondary desktop-only">Portal</a>
+                <a href="index.html#pricing" class="btn-primary desktop-only">Purchase</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="configs-container">
+        <div class="configs-header" data-aos="fade-up">
+            <h1>Config <span class="text-gradient">Browser</span></h1>
+            <p>Browse community configs. Copy the code and paste it in-game to load instantly.</p>
+        </div>
+
+        <!-- Auth gate — shown when not logged in -->
+        <div id="auth-gate" data-aos="fade-up" style="display:none;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="#4f46e5" stroke-width="1.5" fill="none">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <h2 style="font-size:1.5rem;">Login Required</h2>
+            <p>You need an active license to browse configs.</p>
+            <a href="login.html" class="btn-primary btn-large btn-glow">Go to Portal</a>
+        </div>
+
+        <!-- Main content — shown when logged in -->
+        <div id="configs-content" style="display:none;">
+
+            <!-- Load by code -->
+            <div class="load-code-bar" data-aos="fade-up">
+                <span>Load code:</span>
+                <input type="text" id="load-code-input" placeholder="COL-XXXX" maxlength="8" autocomplete="off" spellcheck="false">
+                <button id="load-code-btn" class="btn-secondary" style="white-space:nowrap; padding: 0.5rem 1rem;">Apply in-game</button>
+            </div>
+
+            <!-- Filter bar -->
+            <div class="filter-bar" data-aos="fade-up">
+                <input type="text" id="search-input" placeholder="Search configs, heroes, authors...">
+            </div>
+
+            <!-- Config grid -->
+            <div id="config-grid" class="config-grid">
+                <div class="loading-spinner">Loading configs...</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Matrix rain
+        const canvas = document.getElementById('rain-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+            window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
+            const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*'.split('');
+            const fs = 16; let cols = width/fs; let drops = [];
+            for (let x=0;x<cols;x++) drops[x]=1;
+            function drawRain() {
+                ctx.fillStyle='rgba(5,5,8,0.1)'; ctx.fillRect(0,0,width,height);
+                ctx.fillStyle='#4f46e5'; ctx.font=fs+'px monospace';
+                for (let i=0;i<drops.length;i++) {
+                    ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fs, drops[i]*fs);
+                    if (drops[i]*fs>height && Math.random()>0.975) drops[i]=0;
+                    drops[i]++;
+                }
+            }
+            setInterval(drawRain, 35);
+        }
+
+        // Check if logged in via saved license
+        const savedKey = localStorage.getItem('saved_license');
+        const authGate      = document.getElementById('auth-gate');
+        const configsContent = document.getElementById('configs-content');
+        const configGrid    = document.getElementById('config-grid');
+        const searchInput   = document.getElementById('search-input');
+        const loadCodeInput = document.getElementById('load-code-input');
+        const loadCodeBtn   = document.getElementById('load-code-btn');
+
+        let allConfigs = [];
+
+        if (!savedKey) {
+            authGate.style.display = 'flex';
+        } else {
+            configsContent.style.display = 'block';
+            loadConfigs();
+        }
+
+        async function loadConfigs() {
+            configGrid.innerHTML = '<div class="loading-spinner">Loading configs...</div>';
+            allConfigs = await CONFIG_API.listConfigs();
+            renderConfigs(allConfigs);
+        }
+
+        function renderConfigs(configs) {
+            if (!configs.length) {
+                configGrid.innerHTML = '<div class="empty-state"><p>No configs shared yet. Be the first!</p></div>';
+                return;
+            }
+            configGrid.innerHTML = configs.map(c => `
+                <div class="config-card">
+                    <div class="config-card-header">
+                        <span class="config-code">${c.code || ''}</span>
+                        <span class="config-hero-badge">${c.hero || 'General'}</span>
+                    </div>
+                    <div class="config-label">${escHtml(c.label || 'Unnamed')}</div>
+                    <div class="config-meta">
+                        <span>by ${escHtml(c.author || 'Anonymous')}</span>
+                        <span>${c.date || ''}</span>
+                    </div>
+                    <button class="copy-code-btn" onclick="copyCode(this, '${c.code}')">${c.code}</button>
+                </div>
+            `).join('');
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function copyCode(btn, code) {
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = '✓ Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = code;
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.toLowerCase();
+            const filtered = allConfigs.filter(c =>
+                (c.label  || '').toLowerCase().includes(q) ||
+                (c.hero   || '').toLowerCase().includes(q) ||
+                (c.author || '').toLowerCase().includes(q) ||
+                (c.code   || '').toLowerCase().includes(q)
+            );
+            renderConfigs(filtered);
+        });
+
+        loadCodeBtn.addEventListener('click', () => {
+            const code = loadCodeInput.value.trim().toUpperCase();
+            if (!code) return;
+            // Copy to clipboard — user pastes in-game
+            navigator.clipboard.writeText(code).then(() => {
+                loadCodeBtn.textContent = '✓ Copied! Paste in-game';
+                setTimeout(() => loadCodeBtn.textContent = 'Apply in-game', 2500);
+            });
+        });
+
+        loadCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadCodeBtn.click(); });
+    </script>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>AOS.init({ once: true, duration: 800 });</script>
+</body>
+</html>
