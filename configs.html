@@ -245,7 +245,7 @@
             <div class="load-code-bar" data-aos="fade-up">
                 <span>Load code:</span>
                 <input type="text" id="load-code-input" placeholder="COL-XXXX" maxlength="8" autocomplete="off" spellcheck="false">
-                <button id="load-code-btn" class="btn-secondary" style="white-space:nowrap; padding: 0.5rem 1rem;">Apply in-game</button>
+                <button id="load-code-btn" class="btn-secondary" style="white-space:nowrap; padding: 0.5rem 1rem;">Copy</button>
             </div>
 
             <!-- Filter bar -->
@@ -359,8 +359,8 @@
             if (!code) return;
             // Copy to clipboard — user pastes in-game
             navigator.clipboard.writeText(code).then(() => {
-                loadCodeBtn.textContent = '✓ Copied! Paste in-game';
-                setTimeout(() => loadCodeBtn.textContent = 'Apply in-game', 2500);
+                loadCodeBtn.textContent = '✓ Copied!';
+                setTimeout(() => loadCodeBtn.textContent = 'Copy', 2500);
             });
         });
 
