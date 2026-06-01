@@ -20,10 +20,9 @@ const CONFIG_API = {
 
     async listConfigs() {
         try {
-            // Use GitHub API dir listing (needs token) — but only for file names
-            const token = atob('Z2hwX0FxZUczT251ckVoYWdNZjVNSG90WUxxWkNtV1UwM0luT0NL');
-            const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/contents/configs`, {
-                headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+            // No auth needed for public repo directory listing
+            const res = await fetch(`https://api.github.com/repos/${this.owner}/${this.repo}/contents/configs?t=${Date.now()}`, {
+                headers: { Accept: 'application/vnd.github.v3+json' }
             });
             if (!res.ok) return [];
             const dir = await res.json();
@@ -32,7 +31,6 @@ const CONFIG_API = {
             const configs = [];
             for (const f of dir) {
                 if (!f.name.endsWith('.json') || f.name === 'COL-TEST.json') continue;
-                // Fetch raw content — no auth, no rate limit
                 const json = await this._fetchJson(`configs/${f.name}`);
                 if (json) configs.push(json);
             }
