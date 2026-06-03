@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column - CC Wallet</title>
+    <meta property="og:title" content="Column | CC Wallet">
+    <meta property="og:description" content="Manage your Column Coins (CC) balance, send CC, and buy more.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/columnndev/column/main/logo.png">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="security.js"></script>
+    <style>
+        .wallet-container {
+            min-height: 100vh;
+            padding: 8rem 2rem 4rem;
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .wallet-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .wallet-header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .wallet-header p { color: var(--text-muted); font-size: 1rem; }
+
+        /* Auth gate */
+        #auth-gate {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 3rem;
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            text-align: center;
+        }
+        #auth-gate p { color: var(--text-muted); }
+
+        /* Balance card */
+        .balance-card {
+            background: linear-gradient(135deg, rgba(79,70,229,0.15), rgba(139,92,246,0.1));
+            border: 1px solid rgba(79,70,229,0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .balance-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, #4f46e5, #8b5cf6, transparent);
+        }
+        .balance-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+        .balance-amount {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #4f46e5, #8b5cf6, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.1;
+        }
+        .balance-usd {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.3rem;
+        }
+
+        /* Section panels */
+        .wallet-section {
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 1.5rem;
+        }
+        .wallet-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: white;
+        }
+        .wallet-section h3 svg { color: var(--accent-primary); }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .input-group label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .input-control {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.85rem 1rem;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        .input-control:focus {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 2px rgba(79,70,229,0.2);
+        }
+        .input-control::placeholder { color: #3a4455; }
+
+        .send-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        @media (max-width: 520px) { .send-grid { grid-template-columns: 1fr; } }
+
+        .status-msg {
+            font-size: 0.85rem;
+            padding: 0.6rem 0.9rem;
+            border-radius: 6px;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .status-msg.success {
+            background: rgba(16,185,129,0.1);
+            border: 1px solid rgba(16,185,129,0.25);
+            color: #10b981;
+        }
+        .status-msg.error {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.25);
+            color: #ef4444;
+        }
+
+        /* Package cards */
+        .packages-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        @media (max-width: 520px) { .packages-grid { grid-template-columns: 1fr; } }
+
+        .package-card {
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .package-card:hover {
+            border-color: rgba(79,70,229,0.4);
+            background: rgba(79,70,229,0.05);
+        }
+        .package-cc {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #818cf8;
+        }
+        .package-price {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            margin: 0.3rem 0;
+        }
+        .package-note {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .package-btn {
+            margin-top: 0.75rem;
+            width: 100%;
+            padding: 0.5rem;
+            background: rgba(79,70,229,0.15);
+            border: 1px solid rgba(79,70,229,0.3);
+            color: #818cf8;
+            border-radius: 7px;
+            cursor: pointer;
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        .package-btn:hover {
+            background: rgba(79,70,229,0.25);
+            color: white;
+        }
+
+        /* Transaction log */
+        .tx-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+        .tx-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.7rem 0.9rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .tx-left { display: flex; flex-direction: column; gap: 0.2rem; }
+        .tx-desc { font-size: 0.85rem; color: var(--text-main); }
+        .tx-date { font-size: 0.75rem; color: var(--text-muted); }
+        .tx-amount {
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .tx-amount.positive { color: #10b981; }
+        .tx-amount.negative { color: #ef4444; }
+
+        .empty-tx {
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(6px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-box {
+            background: rgba(12,12,18,0.97);
+            border: 1px solid rgba(79,70,229,0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 480px;
+            width: 90%;
+            transform: translateY(20px);
+            transition: transform 0.25s;
+        }
+        .modal-overlay.open .modal-box { transform: translateY(0); }
+        .modal-box h3 { font-size: 1.3rem; margin-bottom: 0.5rem; }
+        .modal-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.75rem; line-height: 1.6; }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.4rem;
+            line-height: 1;
+            padding: 0;
+            margin-top: -4px;
+        }
+        .modal-close:hover { color: white; }
+
+        .loader-icon { display: none; animation: spin 1s linear infinite; margin-left: 8px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Reseller apply */
+        .reseller-banner {
+            background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(139,92,246,0.08));
+            border: 1px solid rgba(236,72,153,0.2);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .reseller-banner p { color: var(--text-muted); font-size: 0.88rem; margin: 0; flex: 1; }
+        .reseller-banner strong { color: white; }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div id="secure-preloader" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#050508;z-index:999999;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:'Inter',sans-serif;color:white;transition:opacity 0.5s ease;">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse 1.5s infinite;">
+            <circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path>
+        </svg>
+        <h2 style="margin-top:1.5rem;font-size:1.5rem;font-weight:600;">Column Wallet</h2>
+        <p style="color:#8892b0;margin-top:0.5rem;font-size:0.9rem;">Loading your CC balance...</p>
+        <div style="margin-top:2rem;width:200px;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+            <div id="preloader-bar" style="width:0%;height:100%;background:#4f46e5;transition:width 2.5s cubic-bezier(0.4,0,0.2,1);"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => { document.getElementById('preloader-bar').style.width = '100%'; }, 100);
+            setTimeout(() => {
+                const p = document.getElementById('secure-preloader');
+                p.style.opacity = '0';
+                setTimeout(() => { p.style.display = 'none'; }, 500);
+            }, 2600);
+        });
+    </script>
+    <style>@keyframes pulse { 0%{transform:scale(1);opacity:1;} 50%{transform:scale(1.1);opacity:0.7;} 100%{transform:scale(1);opacity:1;} }</style>
+
+    <div class="ambient-background">
+        <canvas id="rain-canvas"></canvas>
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="nav-container">
+            <div class="logo-wrapper" style="display:flex;align-items:center;gap:0.8rem;">
+                <img src="logo.png" alt="Column Logo" class="logo-img" style="height:40px;width:auto;object-fit:contain;mix-blend-mode:screen;">
+                <span class="logo">COLUMN</span>
+            </div>
+            <nav class="nav-links">
+                <a href="index.html#home">Home</a>
+                <a href="index.html#features">Features</a>
+                <a href="index.html#pricing">Pricing</a>
+                <a href="index.html#faq">FAQ</a>
+                <a href="status.html">Status</a>
+                <a href="configs.html">Configs</a>
+                <a href="store.html">Store</a>
+            </nav>
+            <div class="nav-actions">
+                <a href="login.html" class="btn-secondary desktop-only">Portal</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="wallet-container">
+        <div class="wallet-header" data-aos="fade-up">
+            <h1>CC <span class="text-gradient">Wallet</span></h1>
+            <p>Manage your Column Coins — buy, send, and track transactions.</p>
+        </div>
+
+        <!-- Auth gate -->
+        <div id="auth-gate" data-aos="fade-up" style="display:none;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="#4f46e5" stroke-width="1.5" fill="none">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <h2 style="font-size:1.5rem;">Login Required</h2>
+            <p>You need an active license to use the CC Wallet.</p>
+            <a href="login.html" class="btn-primary btn-large btn-glow">Go to Portal</a>
+        </div>
+
+        <!-- Wallet content -->
+        <div id="wallet-content" style="display:none;">
+
+            <!-- Balance -->
+            <div class="balance-card" data-aos="fade-up">
+                <div class="balance-label">Column Coins Balance</div>
+                <div class="balance-amount" id="cc-balance-display">—</div>
+                <div class="balance-usd" id="cc-usd-display">≈ $0.00 USD</div>
+            </div>
+
+            <!-- Buy CC -->
+            <div class="wallet-section" data-aos="fade-up">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>
+                    Buy Column Coins
+                </h3>
+                <div class="packages-grid">
+                    <div class="package-card">
+                        <div class="package-cc">100 CC</div>
+                        <div class="package-price">$1.00</div>
+                        <div class="package-note">Starter pack</div>
+                        <button class="package-btn" onclick="openBuyModal(100,1)">Select</button>
+                    </div>
+                    <div class="package-card" style="border-color:rgba(79,70,229,0.35); background:rgba(79,70,229,0.07);">
+                        <div class="package-cc" style="color:#a5b4fc;">500 CC</div>
+                        <div class="package-price">$5.00</div>
+                        <div class="package-note">Best value</div>
+                        <button class="package-btn" style="background:rgba(79,70,229,0.2); color:#a5b4fc;" onclick="openBuyModal(500,5)">Select</button>
+                    </div>
+                    <div class="package-card">
+                        <div class="package-cc">1000 CC</div>
+                        <div class="package-price">$10.00</div>
+                        <div class="package-note">Power user</div>
+                        <button class="package-btn" onclick="openBuyModal(1000,10)">Select</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Send CC -->
+            <div class="wallet-section" data-aos="fade-up">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Send CC
+                </h3>
+                <div class="send-grid">
+                    <div class="input-group">
+                        <label for="send-username">Recipient Username</label>
+                        <input type="text" id="send-username" class="input-control" placeholder="their username" autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="input-group">
+                        <label for="send-amount">Amount (CC)</label>
+                        <input type="number" id="send-amount" class="input-control" placeholder="100" min="1">
+                    </div>
+                </div>
+                <button id="send-btn" class="btn-primary btn-block" style="margin-top:0.5rem; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <span id="send-text">Send CC</span>
+                    <svg class="loader-icon" id="send-loader" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4"/></svg>
+                </button>
+                <div class="status-msg" id="send-status"></div>
+            </div>
+
+            <!-- Transaction Log -->
+            <div class="wallet-section" data-aos="fade-up">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    Transaction History
+                </h3>
+                <div id="tx-list" class="tx-list">
+                    <div class="empty-tx">Loading transactions...</div>
+                </div>
+            </div>
+
+            <!-- Reseller Apply -->
+            <div class="reseller-banner" data-aos="fade-up">
+                <div>
+                    <strong>Become a CC Reseller</strong>
+                    <p>Sell Column Coins and earn commissions. Apply via our Discord server.</p>
+                </div>
+                <a href="https://discord.gg/column" target="_blank" rel="noopener" class="btn-secondary" style="white-space:nowrap; border-color:rgba(236,72,153,0.3); color:#f472b6; flex-shrink:0;">
+                    Apply on Discord
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Buy CC Modal -->
+    <div class="modal-overlay" id="buy-modal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeBuyModal()">&#x2715;</button>
+            <h3>Buy Column Coins</h3>
+            <p id="buy-modal-desc">To purchase CC, open a ticket in our Discord server and mention:<br><br>
+            <span style="background:rgba(79,70,229,0.15); border:1px solid rgba(79,70,229,0.3); border-radius:6px; padding:0.5rem 0.8rem; font-family:monospace; font-size:0.9rem; display:block; margin:0.75rem 0;" id="buy-modal-code">BUY 100CC — $1.00 USD</span>
+            A staff member will add the CC to your account after payment confirmation.</p>
+            <a href="https://discord.gg/column" target="_blank" rel="noopener" class="btn-primary btn-block btn-glow" style="display:block; text-align:center; text-decoration:none;">
+                Open Discord Ticket
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Matrix Rain
+        const canvas = document.getElementById('rain-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+            window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
+            const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*'.split('');
+            const fs = 16; let cols = width / fs; let drops = [];
+            for (let x = 0; x < cols; x++) drops[x] = 1;
+            function drawRain() {
+                ctx.fillStyle = 'rgba(5,5,8,0.1)'; ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = '#4f46e5'; ctx.font = fs + 'px monospace';
+                for (let i = 0; i < drops.length; i++) {
+                    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fs, drops[i] * fs);
+                    if (drops[i] * fs > height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+            }
+            setInterval(drawRain, 35);
+        }
+
+        // KeyAuth
+        const API_URL = "https://keyauth.win/api/1.2/";
+        const APP_NAME = "column ow";
+        const OWNER_ID = "msmJ8x5So5";
+
+        const savedKey = localStorage.getItem('saved_license');
+        const authGate = document.getElementById('auth-gate');
+        const walletContent = document.getElementById('wallet-content');
+
+        let currentSessionId = null;
+        let currentBalance = 0;
+        let currentUsername = null;
+
+        async function keyAuthInit() {
+            const url = `${API_URL}?type=init&ver=1.0&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.success) return data.sessionid;
+            throw new Error(data.message || "Init failed");
+        }
+
+        async function keyAuthLogin(key, sessionId) {
+            const url = `${API_URL}?type=license&key=${encodeURIComponent(key)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+            const res = await fetch(url);
+            return res.json();
+        }
+
+        async function keyAuthGetVar(sessionId, varName) {
+            try {
+                const url = `${API_URL}?type=getvar&var=${encodeURIComponent(varName)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+                const res = await fetch(url);
+                return await res.json();
+            } catch (e) { return { success: false }; }
+        }
+
+        async function keyAuthSetVar(sessionId, varName, data) {
+            try {
+                const url = `${API_URL}?type=setvar&var=${encodeURIComponent(varName)}&data=${encodeURIComponent(data)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+                const res = await fetch(url);
+                return await res.json();
+            } catch (e) { return { success: false, message: "Network error" }; }
+        }
+
+        function showStatus(elId, msg, type) {
+            const el = document.getElementById(elId);
+            el.textContent = msg;
+            el.className = 'status-msg ' + type;
+            el.style.display = 'block';
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        function updateBalanceDisplay(balance) {
+            currentBalance = parseInt(balance) || 0;
+            document.getElementById('cc-balance-display').textContent = currentBalance.toLocaleString() + ' CC';
+            document.getElementById('cc-usd-display').textContent = '≈ $' + (currentBalance / 100).toFixed(2) + ' USD';
+        }
+
+        function renderTransactions(txArray) {
+            const el = document.getElementById('tx-list');
+            if (!txArray || !txArray.length) {
+                el.innerHTML = '<div class="empty-tx">No transactions yet.</div>';
+                return;
+            }
+            el.innerHTML = txArray.slice().reverse().map(tx => `
+                <div class="tx-item">
+                    <div class="tx-left">
+                        <span class="tx-desc">${escHtml(tx.desc || 'Transaction')}</span>
+                        <span class="tx-date">${escHtml(tx.date || '')}</span>
+                    </div>
+                    <span class="tx-amount ${tx.amount > 0 ? 'positive' : 'negative'}">
+                        ${tx.amount > 0 ? '+' : ''}${tx.amount} CC
+                    </span>
+                </div>
+            `).join('');
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        async function addTransaction(desc, amount) {
+            const txData = await keyAuthGetVar(currentSessionId, 'cc_log');
+            let txArray = [];
+            if (txData.success && txData.response) {
+                try { txArray = JSON.parse(txData.response); } catch(e) {}
+            }
+            txArray.push({
+                desc,
+                amount,
+                date: new Date().toLocaleString()
+            });
+            // Keep last 20
+            if (txArray.length > 20) txArray = txArray.slice(txArray.length - 20);
+            await keyAuthSetVar(currentSessionId, 'cc_log', JSON.stringify(txArray));
+            renderTransactions(txArray);
+        }
+
+        async function initWallet() {
+            if (!savedKey) {
+                authGate.style.display = 'flex';
+                return;
+            }
+            walletContent.style.display = 'block';
+            try {
+                currentSessionId = await keyAuthInit();
+                const loginResult = await keyAuthLogin(savedKey, currentSessionId);
+                if (!loginResult.success) {
+                    authGate.style.display = 'flex';
+                    walletContent.style.display = 'none';
+                    return;
+                }
+                // Fetch username
+                const usernameVar = await keyAuthGetVar(currentSessionId, 'username');
+                if (usernameVar.success && usernameVar.response) {
+                    currentUsername = usernameVar.response;
+                }
+                // Fetch balance
+                const balanceVar = await keyAuthGetVar(currentSessionId, 'cc_balance');
+                const balance = (balanceVar.success && balanceVar.response) ? balanceVar.response : '0';
+                updateBalanceDisplay(balance);
+                // Fetch tx log
+                const txVar = await keyAuthGetVar(currentSessionId, 'cc_log');
+                let txArray = [];
+                if (txVar.success && txVar.response) {
+                    try { txArray = JSON.parse(txVar.response); } catch(e) {}
+                }
+                renderTransactions(txArray);
+            } catch(e) {
+                document.getElementById('cc-balance-display').textContent = 'Error';
+            }
+        }
+
+        // Send CC
+        document.getElementById('send-btn').addEventListener('click', async () => {
+            const recipient = document.getElementById('send-username').value.trim();
+            const amount = parseInt(document.getElementById('send-amount').value);
+            if (!recipient) return showStatus('send-status', 'Please enter a recipient username.', 'error');
+            if (!amount || amount < 1) return showStatus('send-status', 'Please enter a valid amount.', 'error');
+            if (amount > currentBalance) return showStatus('send-status', 'Insufficient CC balance.', 'error');
+            if (recipient.toLowerCase() === (currentUsername || '').toLowerCase()) return showStatus('send-status', 'Cannot send CC to yourself.', 'error');
+
+            const btn = document.getElementById('send-btn');
+            const sendText = document.getElementById('send-text');
+            const loader = document.getElementById('send-loader');
+            btn.disabled = true;
+            sendText.textContent = 'Sending...';
+            loader.style.display = 'block';
+
+            try {
+                // Deduct from sender
+                const newBalance = currentBalance - amount;
+                const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBalance.toString());
+                if (!res.success) {
+                    showStatus('send-status', 'Failed to deduct balance: ' + (res.message || 'Unknown error'), 'error');
+                    return;
+                }
+                updateBalanceDisplay(newBalance);
+
+                // Note about receiver — KeyAuth setvar only works on the current session's user.
+                // We log the send; the recipient balance update requires a backend/admin process.
+                // Show a note to complete via Discord if needed.
+                await addTransaction(`Sent to ${recipient}`, -amount);
+
+                document.getElementById('send-username').value = '';
+                document.getElementById('send-amount').value = '';
+                showStatus('send-status', `Sent ${amount} CC. Note: recipient balance update requires staff confirmation via Discord.`, 'success');
+            } catch(e) {
+                showStatus('send-status', 'Network error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                sendText.textContent = 'Send CC';
+                loader.style.display = 'none';
+            }
+        });
+
+        // Buy modal
+        function openBuyModal(cc, usd) {
+            document.getElementById('buy-modal-code').textContent = `BUY ${cc}CC — $${usd}.00 USD`;
+            document.getElementById('buy-modal').classList.add('open');
+        }
+        function closeBuyModal() {
+            document.getElementById('buy-modal').classList.remove('open');
+        }
+        document.getElementById('buy-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('buy-modal')) closeBuyModal();
+        });
+
+        window.openBuyModal = openBuyModal;
+        window.closeBuyModal = closeBuyModal;
+
+        // Init
+        window.addEventListener('DOMContentLoaded', initWallet);
+    </script>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>AOS.init({ once: true, duration: 800 });</script>
+</body>
+</html>

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column - Config Store</title>
+    <meta property="og:title" content="Column | Config Store">
+    <meta property="og:description" content="Browse and purchase premium community configs using Column Coins.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/columnndev/column/main/logo.png">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="security.js"></script>
+    <script src="config-api.js"></script>
+    <style>
+        .store-container {
+            min-height: 100vh;
+            padding: 8rem 2rem 4rem;
+            max-width: 960px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        .store-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .store-header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+        .store-header p { color: var(--text-muted); font-size: 1rem; }
+
+        /* Auth gate */
+        #auth-gate {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 3rem;
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            text-align: center;
+        }
+        #auth-gate p { color: var(--text-muted); }
+
+        /* Balance bar */
+        .balance-bar {
+            background: rgba(79,70,229,0.08);
+            border: 1px solid rgba(79,70,229,0.2);
+            border-radius: 12px;
+            padding: 0.85rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .balance-bar-info {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .balance-bar-info span { color: var(--text-muted); font-size: 0.9rem; }
+        .balance-bar-amount {
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #818cf8;
+        }
+        .balance-bar a {
+            font-size: 0.85rem;
+            color: #818cf8;
+            text-decoration: none;
+            border: 1px solid rgba(79,70,229,0.3);
+            padding: 0.35rem 0.9rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .balance-bar a:hover {
+            background: rgba(79,70,229,0.15);
+            color: white;
+        }
+
+        /* Filter bar */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        .filter-bar input {
+            flex: 1;
+            min-width: 180px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .filter-bar input:focus { border-color: var(--accent-primary); }
+        .filter-bar input::placeholder { color: var(--text-muted); }
+
+        .filter-tab {
+            padding: 0.65rem 1.1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: var(--font-sans);
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .filter-tab:hover, .filter-tab.active {
+            border-color: rgba(79,70,229,0.4);
+            background: rgba(79,70,229,0.1);
+            color: #818cf8;
+        }
+
+        /* Config grid */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            gap: 1rem;
+        }
+
+        .config-card {
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            transition: border-color 0.2s, transform 0.2s;
+            position: relative;
+        }
+        .config-card:hover {
+            border-color: rgba(79,70,229,0.5);
+            transform: translateY(-2px);
+        }
+        .config-card.paid-card {
+            border-color: rgba(236,72,153,0.2);
+        }
+        .config-card.paid-card:hover {
+            border-color: rgba(236,72,153,0.4);
+        }
+
+        .config-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .config-code {
+            font-family: monospace;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            letter-spacing: 1px;
+        }
+
+        .config-hero-badge {
+            background: rgba(79,70,229,0.15);
+            border: 1px solid rgba(79,70,229,0.3);
+            color: #818cf8;
+            padding: 0.15rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .price-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(236,72,153,0.15);
+            border: 1px solid rgba(236,72,153,0.3);
+            color: #f472b6;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+        .price-badge.free {
+            background: rgba(16,185,129,0.1);
+            border-color: rgba(16,185,129,0.25);
+            color: #10b981;
+        }
+
+        .config-label {
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .config-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .copy-code-btn, .buy-btn {
+            width: 100%;
+            padding: 0.65rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+        .copy-code-btn {
+            background: rgba(79,70,229,0.1);
+            border: 1px solid rgba(79,70,229,0.3);
+            color: #818cf8;
+        }
+        .copy-code-btn:hover {
+            background: rgba(79,70,229,0.2);
+            border-color: var(--accent-primary);
+            color: white;
+        }
+        .copy-code-btn.copied {
+            background: rgba(16,185,129,0.1);
+            border-color: rgba(16,185,129,0.4) !important;
+            color: #10b981;
+        }
+        .buy-btn {
+            background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(139,92,246,0.15));
+            border: 1px solid rgba(236,72,153,0.3);
+            color: #f472b6;
+        }
+        .buy-btn:hover {
+            background: linear-gradient(135deg, rgba(236,72,153,0.25), rgba(139,92,246,0.25));
+            border-color: rgba(236,72,153,0.5);
+            color: white;
+        }
+        .buy-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .revealed-code {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: white;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(79,70,229,0.3);
+            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            margin-top: 4px;
+        }
+        .revealed-code:hover {
+            background: rgba(79,70,229,0.1);
+            border-color: var(--accent-primary);
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+            grid-column: 1 / -1;
+        }
+
+        /* Confirm modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(6px);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-box {
+            background: rgba(12,12,18,0.97);
+            border: 1px solid rgba(79,70,229,0.3);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 420px;
+            width: 90%;
+            transform: translateY(20px);
+            transition: transform 0.25s;
+        }
+        .modal-overlay.open .modal-box { transform: translateY(0); }
+        .modal-box h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .modal-box p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem; }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.4rem;
+            line-height: 1;
+            padding: 0;
+            margin-top: -4px;
+        }
+        .modal-close:hover { color: white; }
+        .modal-btns { display: flex; gap: 10px; }
+
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 9000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background: rgba(20,20,30,0.97);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-left: 4px solid var(--accent-primary);
+            color: white;
+            padding: 0.9rem 1.25rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            transform: translateX(120%);
+            transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+            max-width: 320px;
+        }
+        .toast.show { transform: translateX(0); }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.success { border-left-color: #10b981; }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div id="secure-preloader" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#050508;z-index:999999;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:'Inter',sans-serif;color:white;transition:opacity 0.5s ease;">
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse 1.5s infinite;">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
+        </svg>
+        <h2 style="margin-top:1.5rem;font-size:1.5rem;font-weight:600;">Config Store</h2>
+        <p style="color:#8892b0;margin-top:0.5rem;font-size:0.9rem;">Loading marketplace...</p>
+        <div style="margin-top:2rem;width:200px;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
+            <div id="preloader-bar" style="width:0%;height:100%;background:#4f46e5;transition:width 2.5s cubic-bezier(0.4,0,0.2,1);"></div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => { document.getElementById('preloader-bar').style.width = '100%'; }, 100);
+            setTimeout(() => {
+                const p = document.getElementById('secure-preloader');
+                p.style.opacity = '0';
+                setTimeout(() => { p.style.display = 'none'; }, 500);
+            }, 2600);
+        });
+    </script>
+    <style>@keyframes pulse { 0%{transform:scale(1);opacity:1;} 50%{transform:scale(1.1);opacity:0.7;} 100%{transform:scale(1);opacity:1;} }</style>
+
+    <div class="ambient-background">
+        <canvas id="rain-canvas"></canvas>
+        <div class="glow-orb orb-1"></div>
+        <div class="glow-orb orb-2"></div>
+        <div class="glow-orb orb-3"></div>
+    </div>
+
+    <!-- Navbar -->
+    <header class="navbar" data-aos="fade-down" data-aos-duration="800">
+        <div class="nav-container">
+            <div class="logo-wrapper" style="display:flex;align-items:center;gap:0.8rem;">
+                <img src="logo.png" alt="Column Logo" class="logo-img" style="height:40px;width:auto;object-fit:contain;mix-blend-mode:screen;">
+                <span class="logo">COLUMN</span>
+            </div>
+            <nav class="nav-links">
+                <a href="index.html#home">Home</a>
+                <a href="index.html#features">Features</a>
+                <a href="index.html#pricing">Pricing</a>
+                <a href="index.html#faq">FAQ</a>
+                <a href="status.html">Status</a>
+                <a href="configs.html">Configs</a>
+                <a href="store.html" style="color:white;">Store</a>
+            </nav>
+            <div class="nav-actions">
+                <a href="login.html" class="btn-secondary desktop-only">Portal</a>
+                <a href="wallet.html" class="btn-primary desktop-only">Wallet</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="store-container">
+        <div class="store-header" data-aos="fade-up">
+            <h1>Config <span class="text-gradient">Store</span></h1>
+            <p>Browse free and premium configs from the community. Buy with Column Coins.</p>
+        </div>
+
+        <!-- Auth gate -->
+        <div id="auth-gate" data-aos="fade-up" style="display:none;">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="#4f46e5" stroke-width="1.5" fill="none">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <h2 style="font-size:1.5rem;">Login Required</h2>
+            <p>You need an active license to browse the Config Store.</p>
+            <a href="login.html" class="btn-primary btn-large btn-glow">Go to Portal</a>
+        </div>
+
+        <!-- Store content -->
+        <div id="store-content" style="display:none;">
+            <!-- Balance bar -->
+            <div class="balance-bar" data-aos="fade-up">
+                <div class="balance-bar-info">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#818cf8" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <span>Your balance:</span>
+                    <span class="balance-bar-amount" id="balance-display">Loading...</span>
+                </div>
+                <a href="wallet.html">+ Get More CC</a>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar" data-aos="fade-up">
+                <input type="text" id="search-input" placeholder="Search configs, heroes, authors...">
+                <button class="filter-tab active" data-filter="all">All</button>
+                <button class="filter-tab" data-filter="free">Free</button>
+                <button class="filter-tab" data-filter="paid">Paid</button>
+            </div>
+
+            <!-- Grid -->
+            <div id="config-grid" class="config-grid">
+                <div class="loading-spinner">Loading configs...</div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Buy confirm modal -->
+    <div class="modal-overlay" id="buy-modal">
+        <div class="modal-box">
+            <button class="modal-close" onclick="closeBuyModal()">&#x2715;</button>
+            <h3>Confirm Purchase</h3>
+            <p id="buy-modal-desc">Are you sure you want to buy this config?</p>
+            <div class="modal-btns">
+                <button id="buy-confirm-btn" class="btn-primary" style="flex:1;">Confirm Buy</button>
+                <button onclick="closeBuyModal()" class="btn-secondary" style="flex:1;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        // Matrix Rain
+        const canvas = document.getElementById('rain-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let width = canvas.width = window.innerWidth;
+            let height = canvas.height = window.innerHeight;
+            window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
+            const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*'.split('');
+            const fs = 16; let cols = width / fs; let drops = [];
+            for (let x = 0; x < cols; x++) drops[x] = 1;
+            function drawRain() {
+                ctx.fillStyle = 'rgba(5,5,8,0.1)'; ctx.fillRect(0, 0, width, height);
+                ctx.fillStyle = '#4f46e5'; ctx.font = fs + 'px monospace';
+                for (let i = 0; i < drops.length; i++) {
+                    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fs, drops[i] * fs);
+                    if (drops[i] * fs > height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
+                }
+            }
+            setInterval(drawRain, 35);
+        }
+
+        // KeyAuth
+        const API_URL = "https://keyauth.win/api/1.2/";
+        const APP_NAME = "column ow";
+        const OWNER_ID = "msmJ8x5So5";
+
+        const savedKey = localStorage.getItem('saved_license');
+        const authGate = document.getElementById('auth-gate');
+        const storeContent = document.getElementById('store-content');
+        const configGrid = document.getElementById('config-grid');
+        const searchInput = document.getElementById('search-input');
+
+        let currentSessionId = null;
+        let currentBalance = 0;
+        let allConfigs = [];
+        let currentFilter = 'all';
+        let pendingBuyConfig = null;
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function showToast(msg, type = 'info') {
+            const tc = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = 'toast ' + type;
+            t.textContent = msg;
+            tc.appendChild(t);
+            requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+            setTimeout(() => {
+                t.classList.remove('show');
+                setTimeout(() => t.remove(), 400);
+            }, 4000);
+        }
+
+        async function keyAuthInit() {
+            const url = `${API_URL}?type=init&ver=1.0&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.success) return data.sessionid;
+            throw new Error(data.message || "Init failed");
+        }
+
+        async function keyAuthLogin(key, sessionId) {
+            const url = `${API_URL}?type=license&key=${encodeURIComponent(key)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+            const res = await fetch(url);
+            return res.json();
+        }
+
+        async function keyAuthGetVar(sessionId, varName) {
+            try {
+                const url = `${API_URL}?type=getvar&var=${encodeURIComponent(varName)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+                const res = await fetch(url);
+                return await res.json();
+            } catch(e) { return { success: false }; }
+        }
+
+        async function keyAuthSetVar(sessionId, varName, data) {
+            try {
+                const url = `${API_URL}?type=setvar&var=${encodeURIComponent(varName)}&data=${encodeURIComponent(data)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
+                const res = await fetch(url);
+                return await res.json();
+            } catch(e) { return { success: false, message: "Network error" }; }
+        }
+
+        function updateBalanceDisplay(balance) {
+            currentBalance = parseInt(balance) || 0;
+            document.getElementById('balance-display').textContent = currentBalance.toLocaleString() + ' CC';
+        }
+
+        // Track which paid configs the user has already purchased (stored in cc_purchased var)
+        let purchasedCodes = [];
+
+        async function loadPurchased() {
+            const pVar = await keyAuthGetVar(currentSessionId, 'cc_purchased');
+            if (pVar.success && pVar.response) {
+                try { purchasedCodes = JSON.parse(pVar.response); } catch(e) {}
+            }
+        }
+
+        async function savePurchased() {
+            await keyAuthSetVar(currentSessionId, 'cc_purchased', JSON.stringify(purchasedCodes));
+        }
+
+        function renderConfigs(configs) {
+            if (!configs.length) {
+                configGrid.innerHTML = '<div class="empty-state">No configs found.</div>';
+                return;
+            }
+            configGrid.innerHTML = configs.map(c => {
+                const price = parseInt(c.price) || 0;
+                const isFree = price === 0;
+                const isPurchased = purchasedCodes.includes(c.code);
+                const priceBadge = isFree
+                    ? `<span class="price-badge free">FREE</span>`
+                    : `<span class="price-badge">${price} CC</span>`;
+
+                let actionBtn;
+                if (isFree) {
+                    actionBtn = `<button class="copy-code-btn" onclick="copyCode(this, '${escHtml(c.code)}')">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        Copy Code
+                    </button>`;
+                } else if (isPurchased) {
+                    actionBtn = `<div class="revealed-code" onclick="copyCode(this, '${escHtml(c.code)}')" title="Click to copy">${escHtml(c.code)}</div>`;
+                } else {
+                    actionBtn = `<button class="buy-btn" onclick="startBuy('${escHtml(c.code)}', ${price}, '${escHtml(c.label || c.hero || 'Config')}')">
+                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                        Buy for ${price} CC
+                    </button>`;
+                }
+
+                return `
+                <div class="config-card ${isFree ? '' : 'paid-card'}" data-code="${escHtml(c.code)}">
+                    ${priceBadge}
+                    <div class="config-card-header">
+                        <span class="config-code">${escHtml(c.code || '')}</span>
+                        <span class="config-hero-badge">${escHtml(c.hero || 'General')}</span>
+                    </div>
+                    <div class="config-label">${escHtml(c.label || c.hero || 'Config')}</div>
+                    <div class="config-meta">
+                        <span>${escHtml(c.date || '')}</span>
+                        ${c.author ? `<span>by ${escHtml(c.author)}</span>` : ''}
+                    </div>
+                    ${actionBtn}
+                </div>`;
+            }).join('');
+        }
+
+        function applyFilters() {
+            const q = searchInput.value.toLowerCase();
+            let filtered = allConfigs.filter(c =>
+                (c.label || '').toLowerCase().includes(q) ||
+                (c.hero || '').toLowerCase().includes(q) ||
+                (c.author || '').toLowerCase().includes(q) ||
+                (c.code || '').toLowerCase().includes(q)
+            );
+            if (currentFilter === 'free') filtered = filtered.filter(c => (parseInt(c.price) || 0) === 0);
+            if (currentFilter === 'paid') filtered = filtered.filter(c => (parseInt(c.price) || 0) > 0);
+            renderConfigs(filtered);
+        }
+
+        function copyCode(btn, code) {
+            navigator.clipboard.writeText(code).then(() => {
+                const orig = btn.innerHTML || btn.textContent;
+                if (btn.tagName === 'DIV') {
+                    btn.textContent = 'Copied!';
+                    btn.style.color = '#10b981';
+                    setTimeout(() => { btn.textContent = code; btn.style.color = ''; }, 2000);
+                } else {
+                    btn.textContent = 'Copied!';
+                    btn.classList.add('copied');
+                    setTimeout(() => {
+                        btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Code`;
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }
+            });
+        }
+
+        function startBuy(code, price, label) {
+            if (currentBalance < price) {
+                showToast(`Insufficient CC. You need ${price} CC. Get more in your wallet.`, 'error');
+                return;
+            }
+            pendingBuyConfig = { code, price, label };
+            document.getElementById('buy-modal-desc').innerHTML =
+                `Purchase <strong>${escHtml(label)}</strong> for <strong style="color:#818cf8;">${price} CC</strong>?<br><br>` +
+                `<span style="color:var(--text-muted); font-size:0.85rem;">Your balance after: ${currentBalance - price} CC</span>`;
+            document.getElementById('buy-modal').classList.add('open');
+        }
+
+        function closeBuyModal() {
+            document.getElementById('buy-modal').classList.remove('open');
+            pendingBuyConfig = null;
+        }
+
+        document.getElementById('buy-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('buy-modal')) closeBuyModal();
+        });
+
+        document.getElementById('buy-confirm-btn').addEventListener('click', async () => {
+            if (!pendingBuyConfig) return;
+            const { code, price, label } = pendingBuyConfig;
+            const btn = document.getElementById('buy-confirm-btn');
+            btn.disabled = true;
+            btn.textContent = 'Processing...';
+
+            try {
+                const newBalance = currentBalance - price;
+                const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBalance.toString());
+                if (!res.success) {
+                    showToast('Failed to process purchase: ' + (res.message || 'Unknown error'), 'error');
+                    return;
+                }
+                updateBalanceDisplay(newBalance);
+
+                // Record purchase
+                purchasedCodes.push(code);
+                await savePurchased();
+
+                // Log transaction
+                const txVar = await keyAuthGetVar(currentSessionId, 'cc_log');
+                let txArray = [];
+                if (txVar.success && txVar.response) {
+                    try { txArray = JSON.parse(txVar.response); } catch(e) {}
+                }
+                txArray.push({ desc: `Bought config ${code}`, amount: -price, date: new Date().toLocaleString() });
+                if (txArray.length > 20) txArray = txArray.slice(txArray.length - 20);
+                await keyAuthSetVar(currentSessionId, 'cc_log', JSON.stringify(txArray));
+
+                closeBuyModal();
+                showToast(`Purchased ${label}! Code revealed on the card.`, 'success');
+                applyFilters();
+            } catch(e) {
+                showToast('Network error. Please try again.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Confirm Buy';
+            }
+        });
+
+        // Filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.filter;
+                applyFilters();
+            });
+        });
+
+        searchInput.addEventListener('input', applyFilters);
+
+        // Make functions global
+        window.copyCode = copyCode;
+        window.startBuy = startBuy;
+        window.closeBuyModal = closeBuyModal;
+
+        async function initStore() {
+            if (!savedKey) {
+                authGate.style.display = 'flex';
+                return;
+            }
+            storeContent.style.display = 'block';
+            try {
+                currentSessionId = await keyAuthInit();
+                const loginResult = await keyAuthLogin(savedKey, currentSessionId);
+                if (!loginResult.success) {
+                    authGate.style.display = 'flex';
+                    storeContent.style.display = 'none';
+                    return;
+                }
+                // Fetch balance
+                const balanceVar = await keyAuthGetVar(currentSessionId, 'cc_balance');
+                const balance = (balanceVar.success && balanceVar.response) ? balanceVar.response : '0';
+                updateBalanceDisplay(balance);
+                // Load purchased list
+                await loadPurchased();
+                // Load configs
+                configGrid.innerHTML = '<div class="loading-spinner">Loading configs...</div>';
+                allConfigs = await CONFIG_API.listConfigs();
+                applyFilters();
+            } catch(e) {
+                configGrid.innerHTML = `<div class="empty-state">Error loading store: ${escHtml(e.message)}</div>`;
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', initStore);
+    </script>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>AOS.init({ once: true, duration: 800 });</script>
+</body>
+</html>
