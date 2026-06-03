@@ -11,12 +11,12 @@
     <meta property="og:image" content="https://raw.githubusercontent.com/columnndev/column/main/logo.png">
     <meta property="og:url" content="https://columnndev.github.io/column/login.html">
     <meta name="theme-color" content="#4f46e5">
-    
+
     <!-- Premium Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="style.css">
     <script src="security.js"></script>
     <script src="config.js"></script>
@@ -31,7 +31,7 @@
             position: relative;
             z-index: 10;
         }
-        
+
         .login-card {
             width: 100%;
             max-width: 450px;
@@ -41,33 +41,33 @@
             flex-direction: column;
             gap: 1.5rem;
         }
-        
+
         .login-header {
             text-align: center;
             margin-bottom: 1rem;
         }
-        
+
         .login-header .logo-wrapper {
             justify-content: center;
             margin-bottom: 1.5rem;
         }
-        
+
         .login-header h2 {
             font-size: 1.8rem;
             margin-bottom: 0.5rem;
         }
-        
+
         .login-header p {
             color: var(--text-muted);
             font-size: 0.95rem;
         }
-        
+
         .input-group {
             display: flex;
             flex-direction: column;
             gap: 0.5rem;
         }
-        
+
         .input-group label {
             font-size: 0.85rem;
             font-weight: 500;
@@ -75,7 +75,7 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         .input-control {
             background: rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -87,12 +87,12 @@
             transition: all 0.3s ease;
             outline: none;
         }
-        
+
         .input-control:focus {
             border-color: var(--accent-primary);
             box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
         }
-        
+
         .error-message {
             color: #ef4444;
             font-size: 0.85rem;
@@ -100,13 +100,13 @@
             min-height: 20px;
             display: none;
         }
-        
+
         #dashboard-view {
             display: none;
             flex-direction: column;
             gap: 1.5rem;
         }
-        
+
         .dashboard-info {
             background: rgba(255, 255, 255, 0.03);
             border-radius: 12px;
@@ -116,7 +116,7 @@
             gap: 1rem;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
-        
+
         .info-row {
             display: flex;
             justify-content: space-between;
@@ -124,22 +124,22 @@
             padding-bottom: 1rem;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
-        
+
         .info-row:last-child {
             padding-bottom: 0;
             border-bottom: none;
         }
-        
+
         .info-label {
             color: var(--text-muted);
             font-size: 0.9rem;
         }
-        
+
         .info-value {
             font-weight: 600;
             color: white;
         }
-        
+
         .success-badge {
             background: rgba(16, 185, 129, 0.1);
             color: #10b981;
@@ -148,17 +148,17 @@
             font-size: 0.8rem;
             border: 1px solid rgba(16, 185, 129, 0.2);
         }
-        
+
         .loader-icon {
             display: none;
             animation: spin 1s linear infinite;
             margin-left: 8px;
         }
-        
+
         @keyframes spin {
             100% { transform: rotate(360deg); }
         }
-        
+
         @media (max-width: 768px) {
             .login-card {
                 padding: 2rem 1.5rem;
@@ -197,7 +197,7 @@
         <div class="glow-orb orb-2"></div>
         <div class="glow-orb orb-3"></div>
     </div>
-    
+
     <!-- Navbar -->
     <header class="navbar">
         <div class="nav-container">
@@ -232,14 +232,14 @@
                 <h2>Portal</h2>
                 <p>Enter your license key to access the loader.</p>
             </div>
-            
+
             <div class="error-message" id="error-msg">Invalid key provided.</div>
-            
+
             <div class="input-group">
                 <label for="license-key">License Key</label>
                 <input type="text" id="license-key" class="input-control" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
             </div>
-            
+
             <button id="login-btn" class="btn-primary btn-block btn-large">
                 <span id="login-text">Authenticate</span>
                 <svg class="loader-icon" id="login-loader" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-dashoffset="0"></circle></svg>
@@ -252,14 +252,14 @@
                 <h2>Welcome to Column</h2>
                 <p>Since it's your first time logging in, please choose a username.</p>
             </div>
-            
+
             <div class="error-message" id="username-error-msg"></div>
-            
+
             <div class="input-group">
                 <label for="choose-username">Username</label>
                 <input type="text" id="choose-username" class="input-control" placeholder="Enter your username" autocomplete="off" spellcheck="false">
             </div>
-            
+
             <button id="save-username-btn" class="btn-primary btn-block btn-large">
                 <span id="save-username-text">Save Username</span>
                 <svg class="loader-icon" id="save-username-loader" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-dashoffset="0"></circle></svg>
@@ -272,7 +272,7 @@
                 <h2>Welcome Back</h2>
                 <p>Your license is currently active.</p>
             </div>
-            
+
             <div class="dashboard-info">
                 <div class="info-row">
                     <span class="info-label">Status</span>
@@ -287,7 +287,7 @@
                     <span class="info-value" id="display-expiry">...</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">🟢 Online Now</span>
+                    <span class="info-label">&#x1F7E2; Online Now</span>
                     <span class="info-value" id="display-online" style="color: #10b981;">—</span>
                 </div>
                 <div class="info-row">
@@ -295,7 +295,7 @@
                     <span class="info-value" id="display-cc-balance" style="color: #818cf8; font-weight: 700;">Loading...</span>
                 </div>
             </div>
-            
+
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 <button id="download-btn" class="btn-primary btn-block btn-large btn-glow" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -365,7 +365,7 @@
             const ctx = canvas.getContext('2d');
             let width = canvas.width = window.innerWidth;
             let height = canvas.height = window.innerHeight;
-            
+
             window.addEventListener('resize', () => {
                 width = canvas.width = window.innerWidth;
                 height = canvas.height = window.innerHeight;
@@ -404,7 +404,7 @@
         const loginLoader = document.getElementById('login-loader');
         const licenseKeyInput = document.getElementById('license-key');
         const errorMsg = document.getElementById('error-msg');
-        
+
         const loginView = document.getElementById('login-view');
         const dashboardView = document.getElementById('dashboard-view');
         const displayKey = document.getElementById('display-key');
@@ -424,7 +424,7 @@
         let currentKey = null;
         let currentExpiry = null;
 
-        // HWID generation removed as requested. 
+        // HWID generation removed as requested.
         // WARNING: If HWID Lock is enabled on the KeyAuth Dashboard, omitting the HWID will cause KeyAuth to lock the license to the user's IP Address!
 
         async function keyAuthInit() {
@@ -496,12 +496,12 @@
                 if (result.success) {
                     // Success!
                     localStorage.setItem('saved_license', key);
-                    
+
                     let expiryTimestamp = null;
                     if (result.info && result.info.subscriptions && result.info.subscriptions.length > 0) {
                         expiryTimestamp = result.info.subscriptions[0].expiry;
                     }
-                    
+
                     currentSessionId = sessionId;
                     currentKey = key;
                     currentExpiry = formatExpiry(expiryTimestamp);
@@ -553,14 +553,14 @@
             loginView.style.display = 'none';
             setUsernameView.style.display = 'none';
             dashboardView.style.display = 'flex';
-            
+
             // Check global config for loader status
             if (typeof CONFIG !== 'undefined' && !CONFIG.loaderEnabled) {
                 downloadBtn.disabled = true;
                 downloadBtn.style.opacity = '0.5';
                 downloadBtn.style.cursor = 'not-allowed';
                 downloadBtn.textContent = "Loader Disabled (Updating)";
-                
+
                 // Add click listener to show the message instead of downloading
                 downloadBtn.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -568,11 +568,11 @@
                     alert(CONFIG.disabledMessage);
                 }, true);
             }
-            
+
             // update welcome message
             const dashboardHeader = dashboardView.querySelector('h2');
             dashboardHeader.textContent = `Welcome Back, ${username}`;
-            
+
             // Mask the key
             const masked = key.substring(0, 4) + "-XXXX-XXXX-" + key.substring(key.length - 4);
             displayKey.textContent = masked;
@@ -597,7 +597,7 @@
                 const lastReset = parseInt(varData.response);
                 const now = Date.now();
                 const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
-                
+
                 if (now - lastReset < twoDaysMs) {
                     const timeLeft = twoDaysMs - (now - lastReset);
                     const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
@@ -663,7 +663,7 @@
         resetHwidBtn.addEventListener('click', async () => {
             const btnText = document.getElementById('reset-hwid-text');
             const loader = document.getElementById('reset-hwid-loader');
-            
+
             btnText.style.display = 'none';
             loader.style.display = 'block';
             resetHwidBtn.disabled = true;
@@ -672,11 +672,11 @@
                 // Check last reset
                 const varData = await keyAuthGetVar(currentSessionId, "last_hwid_reset");
                 const now = Date.now();
-                
+
                 if (varData.success && varData.response) {
                     const lastReset = parseInt(varData.response);
                     const twoDaysMs = 2 * 24 * 60 * 60 * 1000;
-                    
+
                     if (now - lastReset < twoDaysMs) {
                         const timeLeft = twoDaysMs - (now - lastReset);
                         const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
@@ -684,14 +684,14 @@
                         return;
                     }
                 }
-                
+
                 // Set new reset time
                 const res = await keyAuthSetVar(currentSessionId, "last_hwid_reset", now.toString());
                 if (res.success) {
                     // For browser demo, we reset the local HWID to force new one next time
                     localStorage.removeItem('hwid');
                     alert("HWID Reset Successful! You can now login from your new hardware.");
-                    
+
                     // Gray out button
                     resetHwidBtn.disabled = true;
                     document.getElementById('reset-hwid-text').textContent = `Wait 48h`;

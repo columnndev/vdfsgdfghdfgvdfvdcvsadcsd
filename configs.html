@@ -367,7 +367,7 @@
                     ? `<span class="price-tag free">FREE</span>`
                     : `<span class="price-tag paid">${price} CC</span>`;
                 const storeLink = !isFree
-                    ? `<a href="store.html" style="display:block; text-align:center; margin-top:6px; font-size:0.8rem; color:#f472b6; text-decoration:none; opacity:0.8;">Buy in Store →</a>`
+                    ? `<a href="store.html" style="display:block; text-align:center; margin-top:6px; font-size:0.8rem; color:#f472b6; text-decoration:none; opacity:0.8;">Buy in Store &#x2192;</a>`
                     : '';
                 return `
                 <div class="config-card">
@@ -385,8 +385,8 @@
                         <span>${c.date || ''}</span>
                     </div>
                     ${isFree
-                        ? `<button class="copy-code-btn" onclick="copyCode(this, '${c.code}')" style="margin-top:8px; font-size:1rem; font-weight:700; letter-spacing:2px;">📋 ${c.code}</button>`
-                        : `<button class="copy-code-btn" style="margin-top:8px; opacity:0.5; cursor:not-allowed;" disabled>🔒 Paid Config</button>`
+                        ? `<button class="copy-code-btn" onclick="copyCode(this, '${c.code}')" style="margin-top:8px; font-size:1rem; font-weight:700; letter-spacing:2px;">&#x1F4CB; ${c.code}</button>`
+                        : `<button class="copy-code-btn" style="margin-top:8px; opacity:0.5; cursor:not-allowed;" disabled>&#x1F512; Paid Config</button>`
                     }
                     ${storeLink}
                 </div>`;
@@ -399,7 +399,7 @@
 
         function copyCode(btn, code) {
             navigator.clipboard.writeText(code).then(() => {
-                btn.textContent = '✓ Copied!';
+                btn.textContent = '&#x2713; Copied!';
                 btn.classList.add('copied');
                 setTimeout(() => {
                     btn.textContent = code;
@@ -424,7 +424,7 @@
             if (!code) return;
             // Copy to clipboard — user pastes in-game
             navigator.clipboard.writeText(code).then(() => {
-                loadCodeBtn.textContent = '✓ Copied!';
+                loadCodeBtn.textContent = '&#x2713; Copied!';
                 setTimeout(() => loadCodeBtn.textContent = 'Copy', 2500);
             });
         });
