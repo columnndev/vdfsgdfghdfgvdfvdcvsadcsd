@@ -110,7 +110,7 @@
 
         @media (max-width: 700px) {
             .nav-links { display: none; }
-            #game-canvas { width: 340px !important; height: 460px !important; }
+            #game-canvas { width: 360px !important; height: 480px !important; }
             .side-panel { width: 340px; }
         }
     </style>
@@ -141,7 +141,7 @@
         </div>
 
         <div class="game-layout">
-            <canvas id="game-canvas" width="520" height="580"></canvas>
+            <canvas id="game-canvas" width="600" height="600"></canvas>
 
             <div class="side-panel">
                 <!-- Stats -->
@@ -249,14 +249,19 @@
     const ctx    = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
 
-    const GRAVITY   = 0.45;
+    const GRAVITY   = 0.40;
     const FLAP      = -8.5;
-    const PIPE_W    = 58;
-    const PIPE_GAP  = 175;
-    const PIPE_SPEED= 2.4;
-    const COIN_R    = 10;
+    const PIPE_W    = 55;
+    const BASE_GAP  = 195; // starts easy, shrinks with score
+    const BASE_SPEED= 2.0; // starts slow, increases with score
+    const COIN_R    = 11;
 
-    let bird, pipes, coins, score, bestScore, ccCoins, gameTime, gameState, raf;
+    // Progressive difficulty — gets harder as score increases
+    function getPipeGap() { return Math.max(130, BASE_GAP - score * 0.8); }
+    function getPipeSpeed() { return Math.min(5.5, BASE_SPEED + score * 0.04); }
+    function getPipeInterval() { return Math.max(70, 120 - score * 0.5); }
+
+    let bird, pipes, coins, viruses, score, bestScore, ccCoins, gameTime, gameState, raf;
     let milestonesReached = [];
     bestScore = parseInt(localStorage.getItem('flappy_best') || '0');
     document.getElementById('ui-best').textContent = bestScore;
@@ -283,6 +288,7 @@
         bird    = { x: 90, y: H/2, vy: 0, r: 16, rot: 0 };
         pipes   = [];
         coins   = [];
+        viruses = [];
         score   = 0;
         ccCoins = 0;
         gameTime= 0;
@@ -295,13 +301,24 @@
     }
 
     function spawnPipe() {
-        const minY = 80, maxY = H - 80 - PIPE_GAP;
+        const gap = getPipeGap();
+        const minY = 80, maxY = H - 80 - gap;
         const topH = minY + Math.random() * (maxY - minY);
-        pipes.push({ x: W + 10, topH });
+        pipes.push({ x: W + 10, topH, gap });
         // 40% chance to spawn a coin in the gap
         if (Math.random() < 0.4) {
-            coins.push({ x: W + 10 + PIPE_W/2 + 30, y: topH + PIPE_GAP/2 + (Math.random()-0.5)*40, alive: true });
+            coins.push({ x: W + 10 + PIPE_W/2 + 30, y: topH + gap/2 + (Math.random()-0.5)*40, alive: true });
         }
+        // Spawn virus every 5 pipes after score 10
+        if (score >= 10 && Math.random() < 0.35) {
+            spawnVirus();
+        }
+    }
+
+    function spawnVirus() {
+        const vy = (Math.random() - 0.5) * 2.5;
+        const y = 60 + Math.random() * (H - 120);
+        viruses.push({ x: W + 40, y, vy, angle: 0, r: 14, wobble: Math.random() * Math.PI * 2 });
     }
 
     function flap() {
@@ -424,6 +441,7 @@
     function update() {
         if (gameState !== 'running') return;
         gameTime++;
+        const spd = getPipeSpeed();
 
         // Bird physics
         bird.vy += GRAVITY;
@@ -431,11 +449,10 @@
 
         // Pipes
         pipeTimer++;
-        if (pipeTimer > 110) { spawnPipe(); pipeTimer = 0; }
+        if (pipeTimer > getPipeInterval()) { spawnPipe(); pipeTimer = 0; }
 
         for (let i = pipes.length - 1; i >= 0; i--) {
-            pipes[i].x -= PIPE_SPEED;
-            // Score when bird passes pipe
+            pipes[i].x -= spd;
             if (pipes[i].x + PIPE_W < bird.x - bird.r && !pipes[i].scored) {
                 pipes[i].scored = true;
                 score++;
@@ -446,23 +463,39 @@
 
         // Coins
         for (let i = coins.length - 1; i >= 0; i--) {
-            coins[i].x -= PIPE_SPEED;
+            coins[i].x -= spd;
             if (coins[i].alive) {
                 const dx = bird.x - coins[i].x, dy = bird.y - coins[i].y;
                 if (Math.sqrt(dx*dx+dy*dy) < bird.r + COIN_R) {
                     coins[i].alive = false;
                     ccCoins++;
-                    hackedFlash = 40; // ~40 frames of HACKED flash
+                    hackedFlash = 40;
                     showToast('+1 CC Coin!', 'gold');
                 }
             }
             if (coins[i].x + COIN_R < 0) coins.splice(i, 1);
         }
 
+        // Viruses
+        for (let i = viruses.length - 1; i >= 0; i--) {
+            const v = viruses[i];
+            v.x -= spd * 0.85;
+            v.wobble += 0.06;
+            v.y += v.vy + Math.sin(v.wobble) * 0.8;
+            v.angle += 0.04;
+            // Bounce off walls
+            if (v.y - v.r < 0 || v.y + v.r > H - 30) v.vy *= -1;
+            // Collision with bird
+            const dvx = bird.x - v.x, dvy = bird.y - v.y;
+            if (Math.sqrt(dvx*dvx+dvy*dvy) < bird.r + v.r - 4) { die(); return; }
+            if (v.x + v.r < 0) viruses.splice(i, 1);
+        }
+
         // Collision with pipes
         for (const p of pipes) {
+            const gap = p.gap || getPipeGap();
             if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W) {
-                if (bird.y - bird.r < p.topH || bird.y + bird.r > p.topH + PIPE_GAP) {
+                if (bird.y - bird.r < p.topH || bird.y + bird.r > p.topH + gap) {
                     die(); return;
                 }
             }
@@ -625,6 +658,42 @@
         ctx.restore();
     }
 
+    function drawVirus(v) {
+        ctx.save();
+        ctx.translate(v.x, v.y);
+        ctx.rotate(v.angle);
+        // Glow
+        ctx.shadowColor = '#ff0040';
+        ctx.shadowBlur = 18;
+        // Spiky virus body
+        ctx.beginPath();
+        const spikes = 8;
+        for (let i = 0; i < spikes * 2; i++) {
+            const a = (i / (spikes * 2)) * Math.PI * 2;
+            const r = i % 2 === 0 ? v.r : v.r * 0.55;
+            ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,0,60,0.85)';
+        ctx.fill();
+        ctx.strokeStyle = '#ff4488';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // Inner circle
+        ctx.beginPath();
+        ctx.arc(0, 0, v.r * 0.38, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff0040';
+        ctx.fill();
+        // "!" warning
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', 0, 0);
+        ctx.restore();
+    }
+
     function drawGround() {
         ctx.fillStyle = COLORS.ground;
         ctx.fillRect(0, H - 30, W, 30);
@@ -684,6 +753,7 @@
         drawBackground();
         pipes.forEach(drawPipe);
         coins.forEach(drawCoin);
+        viruses.forEach(drawVirus);
         drawGround();
         drawBird();
 
@@ -714,6 +784,13 @@
             ctx.font = '14px Inter';
             ctx.fillStyle = '#fbbf24';
             ctx.fillText(`⬡ ${ccCoins}`, W/2, 74);
+            // Speed indicator
+            const spd = getPipeSpeed();
+            const lvl = spd < 2.5 ? 'EASY' : spd < 3.5 ? 'MEDIUM' : spd < 4.5 ? 'HARD' : 'INSANE';
+            const lvlCol = spd < 2.5 ? '#10b981' : spd < 3.5 ? '#fbbf24' : spd < 4.5 ? '#f97316' : '#ef4444';
+            ctx.fillStyle = lvlCol;
+            ctx.font = 'bold 11px monospace';
+            ctx.fillText(lvl, W/2, 92);
             ctx.textAlign = 'left';
         }
         drawOverlay();
