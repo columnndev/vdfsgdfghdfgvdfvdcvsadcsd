@@ -216,8 +216,18 @@
                 <a href="wallet.html">+ Earn CC</a>
             </div>
 
+            <!-- Owner badge -->
+            <div id="owner-badge" style="display:none; background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1)); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:0.9rem 1.25rem; margin-bottom:1.5rem; display:none; align-items:center; gap:0.75rem;">
+                <span style="font-size:1.4rem;">👑</span>
+                <div>
+                    <div style="font-weight:700; color:#fbbf24;">Owner Account</div>
+                    <div style="font-size:0.82rem; color:var(--text-muted);">You have full access to all rewards. Purchases are free for you.</div>
+                </div>
+            </div>
+
             <div class="notice-box" data-aos="fade-up">
-                ⚠️ After purchase, open a Discord ticket with your order. Staff will manually apply your reward within 24h. Keep your license key ready.
+                ⚠️ After purchase, open a Discord ticket with your order. Staff will manually apply your reward within 24h. Keep your license key ready.<br><br>
+                💎 <strong>Pay with Crypto:</strong> We accept BTC, ETH, LTC and more via CoinPayments. Purchase CC packages in your <a href="wallet.html" style="color:#fbbf24;">Wallet</a> using crypto — select "Crypto" at checkout and follow the payment instructions.
             </div>
 
             <!-- Subscriptions -->
@@ -270,27 +280,28 @@
         const API_URL = "https://keyauth.win/api/1.2/";
         const APP_NAME = "column ow";
         const OWNER_ID = "msmJ8x5So5";
+        const OWNER_KEY = 'owner-8ivWfL-DGBLsO';
         const savedKey = localStorage.getItem('saved_license');
+        const isOwner = savedKey === OWNER_KEY;
         let currentSessionId = null, currentBalance = 0, ownedItems = [];
         let pendingItem = null;
 
         // ── Store catalogue ──────────────────────────────────────────
         const STORE = {
             subs: [
-                { id: 'sub_1w', name: '1 Week Sub', icon: '🗓️', desc: 'Full access to Column for 7 days. Applied manually by staff.', price: 800, tier: 'rare' },
-                { id: 'sub_1m', name: '1 Month Sub', icon: '📅', desc: 'Full access to Column for 30 days. Best value for CC.', price: 2500, tier: 'epic' },
-                { id: 'sub_3m', name: '3 Month Sub', icon: '🏆', desc: 'Full access to Column for 90 days. Legendary tier reward.', price: 6000, tier: 'legendary' },
+                { id: 'sub_1d', name: '1 Day Access', icon: '⚡', desc: 'Full access to Column for 24 hours. For trying it out.', price: 500, tier: 'common' },
+                { id: 'sub_1m', name: '1 Month Sub', icon: '📅', desc: 'Full access to Column for 30 days. Save up — this is not cheap.', price: 8000, tier: 'epic' },
+                { id: 'sub_3m', name: '3 Month Sub', icon: '🏆', desc: 'Full access to Column for 90 days. Extremely rare reward.', price: 20000, tier: 'legendary' },
             ],
             perks: [
-                { id: 'hwid_reset', name: 'HWID Reset', icon: '🔄', desc: 'Instantly reset your hardware ID. No cooldown wait.', price: 300, tier: 'common' },
-                { id: 'extra_hwid', name: 'Extra HWID Slot', icon: '💻', desc: 'Unlock a second device on your license permanently.', price: 1500, tier: 'epic' },
-                { id: 'early_access', name: 'Early Access', icon: '⚡', desc: 'Get new features and updates before everyone else.', price: 1000, tier: 'rare' },
-                { id: 'priority_support', name: 'Priority Support', icon: '🎯', desc: 'Skip the queue — get answers in Discord within 1h.', price: 500, tier: 'common' },
+                { id: 'extra_hwid', name: 'Extra HWID Slot', icon: '💻', desc: 'Unlock a second device on your license permanently.', price: 5000, tier: 'epic' },
+                { id: 'early_access', name: 'Early Access', icon: '⚡', desc: 'Get new features and updates before everyone else.', price: 3000, tier: 'rare' },
+                { id: 'priority_support', name: 'Priority Support', icon: '🎯', desc: 'Skip the queue — get answers in Discord within 1h.', price: 2000, tier: 'rare' },
             ],
             exclusive: [
-                { id: 'reseller', name: 'Reseller License', icon: '👑', desc: 'Become an official Column reseller. Set your own prices. Limited slots.', price: 10000, tier: 'legendary' },
-                { id: 'lifetime', name: 'Lifetime Sub', icon: '♾️', desc: 'Never pay again. One-time CC purchase for permanent access.', price: 25000, tier: 'legendary' },
-                { id: 'custom_tag', name: 'Custom Discord Tag', icon: '✨', desc: 'Get a custom role colour and tag in the Discord server.', price: 2000, tier: 'epic' },
+                { id: 'reseller', name: 'Reseller License', icon: '👑', desc: 'Become an official Column reseller. Set your own prices. Very limited slots.', price: 50000, tier: 'legendary' },
+                { id: 'lifetime', name: 'Lifetime Sub', icon: '♾️', desc: 'Never pay again. Permanent access. Only for the most dedicated grinders.', price: 100000, tier: 'legendary' },
+                { id: 'custom_tag', name: 'Custom Discord Tag', icon: '✨', desc: 'Get a custom role colour and tag in the Discord server.', price: 8000, tier: 'epic' },
             ]
         };
 
@@ -325,7 +336,8 @@
             const el = document.getElementById(containerId);
             el.innerHTML = items.map(item => {
                 const owned = ownedItems.includes(item.id);
-                const canAfford = currentBalance >= item.price;
+                const effectivePrice = isOwner ? 0 : item.price;
+                const canAfford = isOwner || currentBalance >= item.price;
                 return `
                 <div class="item-card tier-${item.tier}">
                     <div style="display:flex;justify-content:space-between;align-items:flex-start;">
@@ -335,10 +347,10 @@
                     <div class="item-name">${escHtml(item.name)}</div>
                     <div class="item-desc">${escHtml(item.desc)}</div>
                     <div class="item-footer">
-                        <div class="item-price">${item.price.toLocaleString()} <span class="cc-unit">CC</span></div>
+                        <div class="item-price">${isOwner ? '<span style="color:#fbbf24">FREE</span>' : item.price.toLocaleString() + ' <span class="cc-unit">CC</span>'}</div>
                         ${owned
                             ? `<button class="buy-btn owned" disabled>✓ Ordered</button>`
-                            : `<button class="buy-btn" onclick="startBuy('${item.id}')" ${!canAfford?'disabled title="Not enough CC"':''}>Buy</button>`
+                            : `<button class="buy-btn" onclick="startBuy('${item.id}')" ${!canAfford?'disabled title="Not enough CC"':''}>${isOwner?'Give Free':'Buy'}</button>`
                         }
                     </div>
                 </div>`;
@@ -373,10 +385,13 @@
             const btn = document.getElementById('buy-confirm-btn');
             btn.disabled = true; btn.textContent = 'Processing...';
             try {
-                const newBal = currentBalance - pendingItem.price;
-                const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBal.toString());
-                if (!res.success) { showToast('Failed: ' + (res.message||'error'), 'error'); return; }
-                updateBalance(newBal);
+                const cost = isOwner ? 0 : pendingItem.price;
+                const newBal = currentBalance - cost;
+                if (!isOwner) {
+                    const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBal.toString());
+                    if (!res.success) { showToast('Failed: ' + (res.message||'error'), 'error'); return; }
+                    updateBalance(newBal);
+                }
                 ownedItems.push(pendingItem.id);
                 await keyAuthSetVar(currentSessionId, 'cc_owned', JSON.stringify(ownedItems));
                 // Log tx
@@ -401,6 +416,10 @@
                 if (!login.success) { document.getElementById('auth-gate').style.display='flex'; document.getElementById('store-content').style.display='none'; return; }
                 const balVar = await keyAuthGetVar(currentSessionId, 'cc_balance');
                 updateBalance(balVar.success && balVar.response ? balVar.response : '0');
+                if (isOwner) {
+                    const badge = document.getElementById('owner-badge');
+                    if (badge) badge.style.display = 'flex';
+                }
                 const ownedVar = await keyAuthGetVar(currentSessionId, 'cc_owned');
                 if (ownedVar.success && ownedVar.response) { try { ownedItems = JSON.parse(ownedVar.response); } catch(e){} }
                 renderAll();
