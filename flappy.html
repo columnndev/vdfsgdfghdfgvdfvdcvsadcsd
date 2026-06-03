@@ -110,7 +110,7 @@
 
         @media (max-width: 700px) {
             .nav-links { display: none; }
-            #game-canvas { width: 340px !important; height: 480px !important; }
+            #game-canvas { width: 340px !important; height: 460px !important; }
             .side-panel { width: 340px; }
         }
     </style>
@@ -141,7 +141,7 @@
         </div>
 
         <div class="game-layout">
-            <canvas id="game-canvas" width="420" height="560"></canvas>
+            <canvas id="game-canvas" width="520" height="580"></canvas>
 
             <div class="side-panel">
                 <!-- Stats -->
@@ -252,8 +252,8 @@
     const GRAVITY   = 0.45;
     const FLAP      = -8.5;
     const PIPE_W    = 58;
-    const PIPE_GAP  = 155;
-    const PIPE_SPEED= 2.8;
+    const PIPE_GAP  = 175;
+    const PIPE_SPEED= 2.4;
     const COIN_R    = 10;
 
     let bird, pipes, coins, score, bestScore, ccCoins, gameTime, gameState, raf;
@@ -262,13 +262,22 @@
     document.getElementById('ui-best').textContent = bestScore;
 
     const COLORS = {
-        sky1: '#0a0a14', sky2: '#12123a',
+        sky1: '#030a03', sky2: '#050f05',
         pipe: '#4f46e5', pipeEdge: '#6366f1',
-        bird: '#818cf8', birdEye: '#fff', birdPupil: '#1e1b4b',
+        bird: '#00e5ff', birdEye: '#fff', birdPupil: '#003333',
         coin: '#fbbf24', coinGlow: 'rgba(251,191,36,0.3)',
-        ground: '#0d0d1a', groundLine: '#1e1b4b',
+        ground: '#020a02', groundLine: '#00ff41',
         scoreText: '#fff', ccText: '#fbbf24',
     };
+
+    // Matrix/hacker background state
+    const matrixChars = '01アイウエオABCDEFGHIJKLMNOP$#@%&<>{}[]QRSTUVWXYZ'.split('');
+    const matrixCols = Math.floor(W / 12);
+    const matrixDrops = Array.from({length: matrixCols}, () => Math.random() * -50);
+    let bgFrame = 0;
+
+    // HACKED flash state
+    let hackedFlash = 0;
 
     function resetGame() {
         bird    = { x: 90, y: H/2, vy: 0, r: 16, rot: 0 };
@@ -331,33 +340,43 @@
         ctx.translate(bird.x, bird.y);
         bird.rot = Math.max(-0.5, Math.min(1.2, bird.vy * 0.06));
         ctx.rotate(bird.rot);
-        // Body
+
+        // Outer glow ring
         ctx.beginPath();
-        ctx.arc(0, 0, bird.r, 0, Math.PI*2);
-        ctx.fillStyle = COLORS.bird;
-        ctx.shadowColor = 'rgba(129,140,248,0.5)';
-        ctx.shadowBlur = 12;
-        ctx.fill();
+        ctx.arc(0, 0, bird.r + 4, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(0,229,255,0.25)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Body - cyan pixel square-ish shape
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = '#003a40';
+        ctx.fillRect(-bird.r, -bird.r, bird.r * 2, bird.r * 2);
+
+        // Cyan border
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-bird.r, -bird.r, bird.r * 2, bird.r * 2);
         ctx.shadowBlur = 0;
-        // Wing
+
+        // ">" symbol on body (hacker cursor icon)
+        ctx.fillStyle = '#00ff88';
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 8;
+        ctx.fillText('>', 1, 1);
+        ctx.shadowBlur = 0;
+
+        // Small cyan eye dot
+        ctx.fillStyle = '#00e5ff';
         ctx.beginPath();
-        ctx.ellipse(-4, 4, 9, 5, -0.4, 0, Math.PI*2);
-        ctx.fillStyle = '#6366f1';
+        ctx.arc(bird.r - 5, -bird.r + 5, 3, 0, Math.PI*2);
         ctx.fill();
-        // Eye
-        ctx.beginPath();
-        ctx.arc(6, -4, 5, 0, Math.PI*2);
-        ctx.fillStyle = COLORS.birdEye;
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(7, -4, 2.5, 0, Math.PI*2);
-        ctx.fillStyle = COLORS.birdPupil;
-        ctx.fill();
-        // Beak
-        ctx.beginPath();
-        ctx.moveTo(13, -1); ctx.lineTo(18, 2); ctx.lineTo(13, 5);
-        ctx.fillStyle = '#fbbf24';
-        ctx.fill();
+
+        ctx.textAlign = 'left';
         ctx.restore();
     }
 
@@ -412,7 +431,7 @@
 
         // Pipes
         pipeTimer++;
-        if (pipeTimer > 95) { spawnPipe(); pipeTimer = 0; }
+        if (pipeTimer > 110) { spawnPipe(); pipeTimer = 0; }
 
         for (let i = pipes.length - 1; i >= 0; i--) {
             pipes[i].x -= PIPE_SPEED;
@@ -433,6 +452,7 @@
                 if (Math.sqrt(dx*dx+dy*dy) < bird.r + COIN_R) {
                     coins[i].alive = false;
                     ccCoins++;
+                    hackedFlash = 40; // ~40 frames of HACKED flash
                     showToast('+1 CC Coin!', 'gold');
                 }
             }
@@ -520,26 +540,105 @@
     });
 
     function drawBackground() {
+        bgFrame++;
+
+        // Deep dark green base
         const grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, '#0a0a18');
-        grad.addColorStop(1, '#080810');
+        grad.addColorStop(0, '#020b02');
+        grad.addColorStop(1, '#010601');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, W, H);
 
-        // Stars
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        for (let i = 0; i < 60; i++) {
-            const sx = (i * 137.5) % W;
-            const sy = (i * 73.1) % (H * 0.7);
-            ctx.fillRect(sx, sy, 1, 1);
+        // Neon green perspective grid lines fading to horizon
+        ctx.save();
+        const horizonY = H * 0.45;
+        ctx.strokeStyle = 'rgba(0,255,65,0.08)';
+        ctx.lineWidth = 1;
+        // Horizontal grid lines
+        for (let i = 0; i < 12; i++) {
+            const t = i / 11;
+            const y = horizonY + (H - horizonY) * (t * t);
+            const alpha = 0.04 + t * 0.1;
+            ctx.strokeStyle = `rgba(0,255,65,${alpha})`;
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
         }
+        // Vertical perspective lines
+        for (let i = 0; i <= 10; i++) {
+            const t = i / 10;
+            const xBottom = t * W;
+            const xTop = W * 0.1 + t * W * 0.8;
+            ctx.strokeStyle = `rgba(0,255,65,0.05)`;
+            ctx.beginPath(); ctx.moveTo(xTop, horizonY); ctx.lineTo(xBottom, H); ctx.stroke();
+        }
+        ctx.restore();
+
+        // Faint circuit-board lines (static, deterministic)
+        ctx.save();
+        ctx.strokeStyle = 'rgba(0,200,50,0.06)';
+        ctx.lineWidth = 1;
+        const circuitSegs = [
+            [20,60, 80,60, 80,120], [120,30, 120,90, 200,90],
+            [250,50, 310,50, 310,100, 380,100], [400,40, 460,40, 460,80],
+            [30,200, 30,250, 100,250], [150,180, 220,180, 220,230, 290,230],
+            [350,160, 350,220, 430,220, 430,270], [480,150, 480,200],
+            [10,350, 70,350, 70,400, 130,400], [180,330, 260,330, 260,380],
+            [300,360, 370,360, 370,320, 450,320], [500,340, 500,390],
+            [40,470, 110,470, 110,510], [200,450, 200,490, 280,490],
+            [320,460, 400,460, 400,510, 460,510],
+        ];
+        for (const seg of circuitSegs) {
+            ctx.beginPath();
+            ctx.moveTo(seg[0], seg[1]);
+            for (let i = 2; i < seg.length; i += 2) ctx.lineTo(seg[i], seg[i+1]);
+            ctx.stroke();
+            // dot at end
+            ctx.fillStyle = 'rgba(0,255,65,0.12)';
+            ctx.beginPath(); ctx.arc(seg[seg.length-2], seg[seg.length-1], 2.5, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.restore();
+
+        // Scrolling matrix rain characters (faint green)
+        ctx.save();
+        ctx.font = '11px monospace';
+        for (let i = 0; i < matrixCols; i++) {
+            const drop = matrixDrops[i];
+            const y = drop * 14;
+            if (y > 0 && y < H + 14) {
+                // Lead char brighter
+                const alpha = 0.18 + Math.sin(bgFrame * 0.05 + i) * 0.04;
+                ctx.fillStyle = `rgba(0,255,65,${alpha + 0.1})`;
+                const ch = matrixChars[Math.floor((bgFrame + i * 7) % matrixChars.length)];
+                ctx.fillText(ch, i * 12 + 1, y);
+                // Trail
+                for (let t = 1; t < 5; t++) {
+                    const ty = y - t * 14;
+                    if (ty < 0) continue;
+                    const ta = Math.max(0, alpha - t * 0.04);
+                    ctx.fillStyle = `rgba(0,200,50,${ta})`;
+                    const tc = matrixChars[Math.floor((bgFrame - t * 3 + i * 5) % matrixChars.length)];
+                    ctx.fillText(tc, i * 12 + 1, ty);
+                }
+            }
+            matrixDrops[i] += 0.25;
+            if (matrixDrops[i] * 14 > H && Math.random() > 0.985) matrixDrops[i] = Math.random() * -20;
+        }
+        ctx.restore();
     }
 
     function drawGround() {
         ctx.fillStyle = COLORS.ground;
         ctx.fillRect(0, H - 30, W, 30);
-        ctx.fillStyle = COLORS.groundLine;
-        ctx.fillRect(0, H - 30, W, 2);
+        // Neon green ground line
+        ctx.fillStyle = 'rgba(0,255,65,0.6)';
+        ctx.fillRect(0, H - 30, W, 1);
+        // Ground scan-line text
+        ctx.font = '9px monospace';
+        ctx.fillStyle = 'rgba(0,255,65,0.25)';
+        ctx.textAlign = 'left';
+        for (let i = 0; i < 18; i++) {
+            ctx.fillText(matrixChars[(bgFrame + i*3) % matrixChars.length], i * 30 + 2, H - 12);
+        }
+        ctx.textAlign = 'left';
     }
 
     function drawOverlay() {
@@ -587,6 +686,25 @@
         coins.forEach(drawCoin);
         drawGround();
         drawBird();
+
+        // HACKED flash overlay
+        if (hackedFlash > 0) {
+            const alpha = Math.min(hackedFlash / 40, 1) * 0.55;
+            ctx.fillStyle = `rgba(0,255,65,${alpha})`;
+            ctx.fillRect(0, 0, W, H);
+            ctx.save();
+            ctx.font = 'bold 52px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = `rgba(0,20,0,${Math.min(hackedFlash/40,1)})`;
+            ctx.shadowColor = '#00ff41';
+            ctx.shadowBlur = 30;
+            ctx.fillText('HACKED', W/2, H/2);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            hackedFlash--;
+        }
+
         // HUD score
         if (gameState === 'running') {
             ctx.fillStyle = 'rgba(255,255,255,0.9)';
