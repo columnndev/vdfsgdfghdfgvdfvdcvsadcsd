@@ -303,10 +303,10 @@
     }
 
     function spawnPipe() {
-        const gap = Math.floor(getPipeGap());
-        const minY = 80, maxY = H - 80 - gap;
-        if (maxY <= minY) return; // safety check
-        const topH = minY + Math.random() * (maxY - minY);
+        const gap = 180; // fixed gap always visible, ignore progressive for now
+        const minY = 100;
+        const maxY = H - 100 - gap;
+        const topH = minY + Math.random() * Math.max(1, maxY - minY);
         pipes.push({ x: W + 10, topH, gap });
         // 40% chance to spawn a coin in the gap
         if (Math.random() < 0.4) {
@@ -401,6 +401,7 @@
     }
 
     function drawPipe(p) {
+        const gap = p.gap || 180;
         const grad = ctx.createLinearGradient(p.x, 0, p.x + PIPE_W, 0);
         grad.addColorStop(0, '#3730a3');
         grad.addColorStop(0.5, COLORS.pipe);
@@ -411,7 +412,7 @@
         ctx.fillStyle = COLORS.pipeEdge;
         ctx.fillRect(p.x - 5, p.topH - 18, PIPE_W + 10, 18);
         // Bottom pipe
-        const botY = p.topH + PIPE_GAP;
+        const botY = p.topH + gap;
         ctx.fillStyle = grad;
         ctx.fillRect(p.x, botY, PIPE_W, H - botY);
         ctx.fillStyle = COLORS.pipeEdge;
