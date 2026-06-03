@@ -185,7 +185,6 @@
                 <a href="status.html">Status</a>
                 <a href="configs.html">Configs</a>
                 <a href="store.html" style="color:white;">Store</a>
-                <a href="flappy.html">Flappy CC</a>
             </nav>
             <div class="nav-actions">
                 <a href="login.html" class="btn-secondary desktop-only">Portal</a>
@@ -387,41 +386,66 @@
             const btn = document.getElementById('buy-confirm-btn');
             btn.disabled = true; btn.textContent = 'Processing...';
             try {
-                const cost = isOwner ? 0 : pendingItem.price;
-                const newBal = currentBalance - cost;
                 if (!isOwner) {
+                    const cost = pendingItem.price;
+                    const newBal = currentBalance - cost;
                     const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBal.toString());
-                    if (!res.success) { showToast('Failed: ' + (res.message||'error'), 'error'); return; }
+                    if (!res.success) { showToast('Failed: ' + (res.message||'error'), 'error'); btn.disabled=false; btn.textContent='Confirm'; return; }
                     updateBalance(newBal);
+                    ownedItems.push(pendingItem.id);
+                    await keyAuthSetVar(currentSessionId, 'cc_owned', JSON.stringify(ownedItems));
+                    const txVar = await keyAuthGetVar(currentSessionId, 'cc_log');
+                    let txArr = []; try { txArr = JSON.parse(txVar.response||'[]'); } catch(e){}
+                    txArr.push({ desc: `Bought: ${pendingItem.name}`, amount: -cost, date: new Date().toLocaleString(), key: savedKey.substring(0,8)+'...' });
+                    if(txArr.length>20) txArr = txArr.slice(-20);
+                    await keyAuthSetVar(currentSessionId, 'cc_log', JSON.stringify(txArr));
+                    // Save order to GitHub for owner to see
+                    await saveOrder(pendingItem.name, cost);
+                } else {
+                    // Owner — just mark as owned locally, no CC deducted
+                    ownedItems.push(pendingItem.id);
                 }
-                ownedItems.push(pendingItem.id);
-                await keyAuthSetVar(currentSessionId, 'cc_owned', JSON.stringify(ownedItems));
-                // Log tx
-                const txVar = await keyAuthGetVar(currentSessionId, 'cc_log');
-                let txArr = []; try { txArr = JSON.parse(txVar.response||'[]'); } catch(e){}
-                txArr.push({ desc: `Bought: ${pendingItem.name}`, amount: -pendingItem.price, date: new Date().toLocaleString() });
-                if(txArr.length>20) txArr = txArr.slice(-20);
-                await keyAuthSetVar(currentSessionId, 'cc_log', JSON.stringify(txArr));
                 closeBuyModal();
                 showToast(`${pendingItem.name} ordered! Open a Discord ticket to redeem.`, 'success');
                 renderAll();
-            } catch(e) { showToast('Network error', 'error'); }
+            } catch(e) { showToast('Purchase failed: ' + e.message, 'error'); }
             finally { btn.disabled=false; btn.textContent='Confirm'; }
         });
+
+        // Save order to GitHub orders/ folder so owner can see it
+        async function saveOrder(itemName, cost) {
+            try {
+                const token = atob('Z2hwX0FxZUczT251ckVoYWdNZjVNSG90WUxxWkNtV1UwM0luT0NL');
+                const id = Date.now().toString(36).toUpperCase();
+                const payload = { id, item: itemName, cost, key: savedKey.substring(0,12)+'...', date: new Date().toISOString().split('T')[0], status: 'pending' };
+                const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+                await fetch(`https://api.github.com/repos/columnndev/column/contents/orders/ORD-${id}.json`, {
+                    method: 'PUT',
+                    headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Order ${id}`, content: b64 })
+                });
+            } catch(e) {}
+        }
 
         async function initStore() {
             if (!savedKey) { document.getElementById('auth-gate').style.display='flex'; return; }
             document.getElementById('store-content').style.display='block';
+
+            // Owner bypasses KeyAuth entirely
+            if (isOwner) {
+                updateBalance(999999);
+                const badge = document.getElementById('owner-badge');
+                if (badge) badge.style.display = 'flex';
+                renderAll();
+                return;
+            }
+
             try {
                 currentSessionId = await keyAuthInit();
                 const login = await keyAuthLogin(savedKey, currentSessionId);
                 if (!login.success) { document.getElementById('auth-gate').style.display='flex'; document.getElementById('store-content').style.display='none'; return; }
                 const balVar = await keyAuthGetVar(currentSessionId, 'cc_balance');
                 updateBalance(balVar.success && balVar.response ? balVar.response : '0');
-                if (isOwner) {
-                    const badge = document.getElementById('owner-badge');
-                    if (badge) badge.style.display = 'flex';
-                }
                 const ownedVar = await keyAuthGetVar(currentSessionId, 'cc_owned');
                 if (ownedVar.success && ownedVar.response) { try { ownedItems = JSON.parse(ownedVar.response); } catch(e){} }
                 renderAll();
