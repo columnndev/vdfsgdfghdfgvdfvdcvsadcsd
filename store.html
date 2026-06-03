@@ -154,18 +154,25 @@
             border-color: rgba(236,72,153,0.4);
         }
 
-        .config-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
         .config-code {
             font-family: monospace;
             font-size: 1.05rem;
             font-weight: 700;
             color: var(--accent-primary);
             letter-spacing: 1px;
+        }
+
+        .config-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .config-header-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
         }
 
         .config-hero-badge {
@@ -179,9 +186,6 @@
         }
 
         .price-badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
             background: rgba(236,72,153,0.15);
             border: 1px solid rgba(236,72,153,0.3);
             color: #f472b6;
@@ -189,6 +193,7 @@
             border-radius: 6px;
             font-size: 0.8rem;
             font-weight: 700;
+            white-space: nowrap;
         }
         .price-badge.free {
             background: rgba(16,185,129,0.1);
@@ -612,17 +617,20 @@
                     </button>`;
                 }
 
+                const displayAuthor = (!c.author || c.author === '' || c.author === 'User') ? 'Anonymous' : c.author;
                 return `
                 <div class="config-card ${isFree ? '' : 'paid-card'}" data-code="${escHtml(c.code)}">
-                    ${priceBadge}
                     <div class="config-card-header">
                         <span class="config-code">${escHtml(c.code || '')}</span>
-                        <span class="config-hero-badge">${escHtml(c.hero || 'General')}</span>
+                        <div class="config-header-right">
+                            ${priceBadge}
+                            <span class="config-hero-badge">${escHtml(c.hero || 'General')}</span>
+                        </div>
                     </div>
                     <div class="config-label">${escHtml(c.label || c.hero || 'Config')}</div>
                     <div class="config-meta">
                         <span>${escHtml(c.date || '')}</span>
-                        ${c.author ? `<span>by ${escHtml(c.author)}</span>` : ''}
+                        <span>by ${escHtml(displayAuthor)}</span>
                     </div>
                     ${actionBtn}
                 </div>`;
