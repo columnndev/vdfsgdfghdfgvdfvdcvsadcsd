@@ -249,8 +249,8 @@
     const ctx    = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
 
-    const GRAVITY   = 0.40;
-    const FLAP      = -8.5;
+    const GRAVITY   = 0.28;
+    const FLAP      = -7.2;
     const PIPE_W    = 55;
     const BASE_GAP  = 195; // starts easy, shrinks with score
     const BASE_SPEED= 2.0; // starts slow, increases with score
@@ -259,9 +259,10 @@
     // Progressive difficulty — gets harder as score increases
     function getPipeGap() { return Math.max(130, BASE_GAP - score * 0.8); }
     function getPipeSpeed() { return Math.min(5.5, BASE_SPEED + score * 0.04); }
-    function getPipeInterval() { return Math.max(70, 120 - score * 0.5); }
+    function getPipeInterval() { return Math.floor(Math.max(70, 120 - score * 0.5)); }
 
-    let bird, pipes, coins, viruses, score, bestScore, ccCoins, gameTime, gameState, raf;
+    let bird, pipes, coins, score, bestScore, ccCoins, gameTime, gameState, raf;
+    let viruses = [];
     let milestonesReached = [];
     bestScore = parseInt(localStorage.getItem('flappy_best') || '0');
     document.getElementById('ui-best').textContent = bestScore;
@@ -292,6 +293,7 @@
         score   = 0;
         ccCoins = 0;
         gameTime= 0;
+        pipeTimer = -60; // delay first pipe
         milestonesReached = [];
         gameState = 'idle'; // idle | running | dead
         document.querySelectorAll('.milestone-item').forEach(el => el.classList.remove('reached'));
@@ -301,8 +303,9 @@
     }
 
     function spawnPipe() {
-        const gap = getPipeGap();
+        const gap = Math.floor(getPipeGap());
         const minY = 80, maxY = H - 80 - gap;
+        if (maxY <= minY) return; // safety check
         const topH = minY + Math.random() * (maxY - minY);
         pipes.push({ x: W + 10, topH, gap });
         // 40% chance to spawn a coin in the gap
@@ -437,7 +440,7 @@
         ctx.restore();
     }
 
-    let pipeTimer = 0;
+    let pipeTimer = -60; // negative = delay first pipe by 60 extra frames
     function update() {
         if (gameState !== 'running') return;
         gameTime++;
@@ -476,26 +479,33 @@
             if (coins[i].x + COIN_R < 0) coins.splice(i, 1);
         }
 
-        // Viruses
+        // Viruses — only active once fully on screen
         for (let i = viruses.length - 1; i >= 0; i--) {
             const v = viruses[i];
-            v.x -= spd * 0.85;
-            v.wobble += 0.06;
-            v.y += v.vy + Math.sin(v.wobble) * 0.8;
+            v.x -= spd * 0.75;
+            v.wobble += 0.05;
+            v.y += v.vy + Math.sin(v.wobble) * 0.6;
             v.angle += 0.04;
             // Bounce off walls
-            if (v.y - v.r < 0 || v.y + v.r > H - 30) v.vy *= -1;
-            // Collision with bird
-            const dvx = bird.x - v.x, dvy = bird.y - v.y;
-            if (Math.sqrt(dvx*dvx+dvy*dvy) < bird.r + v.r - 4) { die(); return; }
+            if (v.y - v.r < 10) { v.y = 10 + v.r; v.vy = Math.abs(v.vy); }
+            if (v.y + v.r > H - 40) { v.y = H - 40 - v.r; v.vy = -Math.abs(v.vy); }
+            // Only collide once fully on screen
+            if (v.x < W - 20) {
+                const dvx = bird.x - v.x, dvy = bird.y - v.y;
+                if (Math.sqrt(dvx*dvx+dvy*dvy) < bird.r + v.r - 6) { die(); return; }
+            }
             if (v.x + v.r < 0) viruses.splice(i, 1);
         }
 
         // Collision with pipes
         for (const p of pipes) {
-            const gap = p.gap || getPipeGap();
-            if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W) {
-                if (bird.y - bird.r < p.topH || bird.y + bird.r > p.topH + gap) {
+            if (!p.gap) continue; // skip malformed pipes
+            // Horizontal overlap check
+            if (bird.x + 8 > p.x && bird.x - 8 < p.x + PIPE_W) {
+                // Vertical: only die if actually hitting pipe, not just the gap
+                const inTopPipe = bird.y - 8 < p.topH;
+                const inBotPipe = bird.y + 8 > p.topH + p.gap;
+                if (inTopPipe || inBotPipe) {
                     die(); return;
                 }
             }
@@ -572,90 +582,105 @@
         }
     });
 
+    // Scrolling hex data streams
+    const hexStreams = Array.from({length: 8}, (_, i) => ({
+        x: (i / 8) * W + 20, y: Math.random() * H, speed: 0.4 + Math.random() * 0.6,
+        chars: Array.from({length: 12}, () => Math.floor(Math.random()*256).toString(16).padStart(2,'0'))
+    }));
+
+    // Animated circuit nodes
+    const circuitNodes = [
+        {x:60,y:80},{x:180,y:50},{x:320,y:90},{x:460,y:60},{x:550,y:100},
+        {x:40,y:200},{x:150,y:240},{x:280,y:190},{x:420,y:230},{x:530,y:210},
+        {x:80,y:340},{x:220,y:380},{x:360,y:320},{x:480,y:370},{x:570,y:340},
+        {x:50,y:460},{x:190,y:500},{x:330,y:470},{x:460,y:510},{x:560,y:480},
+    ];
+    const circuitEdges = [
+        [0,1],[1,2],[2,3],[3,4],[5,6],[6,7],[7,8],[8,9],
+        [10,11],[11,12],[12,13],[13,14],[0,5],[2,7],[4,9],[5,10],[7,12],[9,14],
+        [10,15],[11,16],[12,17],[13,18],[14,19],[15,16],[16,17],[17,18],[18,19],
+    ];
+
     function drawBackground() {
         bgFrame++;
 
-        // Deep dark green base
+        // Deep dark base with subtle gradient
         const grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, '#020b02');
-        grad.addColorStop(1, '#010601');
+        grad.addColorStop(0, '#010508');
+        grad.addColorStop(0.5, '#020a05');
+        grad.addColorStop(1, '#010306');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, W, H);
 
-        // Neon green perspective grid lines fading to horizon
+        // === CIRCUIT BOARD ===
         ctx.save();
-        const horizonY = H * 0.45;
-        ctx.strokeStyle = 'rgba(0,255,65,0.08)';
-        ctx.lineWidth = 1;
-        // Horizontal grid lines
-        for (let i = 0; i < 12; i++) {
-            const t = i / 11;
-            const y = horizonY + (H - horizonY) * (t * t);
-            const alpha = 0.04 + t * 0.1;
-            ctx.strokeStyle = `rgba(0,255,65,${alpha})`;
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+        // Edges (wires)
+        for (const [a,b] of circuitEdges) {
+            const na = circuitNodes[a], nb = circuitNodes[b];
+            const pulse = (Math.sin(bgFrame * 0.03 + a * 0.7) + 1) * 0.5;
+            ctx.strokeStyle = `rgba(0,${100+Math.floor(pulse*80)},${40+Math.floor(pulse*30)},${0.06+pulse*0.04})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y); ctx.stroke();
         }
-        // Vertical perspective lines
-        for (let i = 0; i <= 10; i++) {
-            const t = i / 10;
-            const xBottom = t * W;
-            const xTop = W * 0.1 + t * W * 0.8;
-            ctx.strokeStyle = `rgba(0,255,65,0.05)`;
-            ctx.beginPath(); ctx.moveTo(xTop, horizonY); ctx.lineTo(xBottom, H); ctx.stroke();
-        }
-        ctx.restore();
-
-        // Faint circuit-board lines (static, deterministic)
-        ctx.save();
-        ctx.strokeStyle = 'rgba(0,200,50,0.06)';
-        ctx.lineWidth = 1;
-        const circuitSegs = [
-            [20,60, 80,60, 80,120], [120,30, 120,90, 200,90],
-            [250,50, 310,50, 310,100, 380,100], [400,40, 460,40, 460,80],
-            [30,200, 30,250, 100,250], [150,180, 220,180, 220,230, 290,230],
-            [350,160, 350,220, 430,220, 430,270], [480,150, 480,200],
-            [10,350, 70,350, 70,400, 130,400], [180,330, 260,330, 260,380],
-            [300,360, 370,360, 370,320, 450,320], [500,340, 500,390],
-            [40,470, 110,470, 110,510], [200,450, 200,490, 280,490],
-            [320,460, 400,460, 400,510, 460,510],
-        ];
-        for (const seg of circuitSegs) {
+        // Nodes (glowing dots)
+        for (let i = 0; i < circuitNodes.length; i++) {
+            const n = circuitNodes[i];
+            const pulse = (Math.sin(bgFrame * 0.04 + i * 1.1) + 1) * 0.5;
+            const r = 3 + pulse * 2;
+            ctx.shadowColor = '#00ff65';
+            ctx.shadowBlur = 8 + pulse * 6;
             ctx.beginPath();
-            ctx.moveTo(seg[0], seg[1]);
-            for (let i = 2; i < seg.length; i += 2) ctx.lineTo(seg[i], seg[i+1]);
-            ctx.stroke();
-            // dot at end
-            ctx.fillStyle = 'rgba(0,255,65,0.12)';
-            ctx.beginPath(); ctx.arc(seg[seg.length-2], seg[seg.length-1], 2.5, 0, Math.PI*2); ctx.fill();
+            ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(0,255,100,${0.15 + pulse * 0.25})`;
+            ctx.fill();
+            // Inner bright dot
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 1.5, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(100,255,150,${0.5 + pulse * 0.4})`;
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // === HEX DATA STREAMS ===
+        ctx.save();
+        ctx.font = '10px monospace';
+        for (const s of hexStreams) {
+            s.y += s.speed;
+            if (s.y > H + 120) { s.y = -20; s.x = Math.random() * W; }
+            // Randomize one char occasionally
+            if (Math.random() < 0.02) s.chars[Math.floor(Math.random()*s.chars.length)] = Math.floor(Math.random()*256).toString(16).padStart(2,'0');
+            for (let j = 0; j < s.chars.length; j++) {
+                const cy = s.y - j * 13;
+                if (cy < 0 || cy > H) continue;
+                const alpha = Math.max(0, 0.18 - j * 0.015);
+                ctx.fillStyle = j === 0 ? `rgba(50,255,120,${alpha+0.12})` : `rgba(0,180,60,${alpha})`;
+                ctx.fillText(s.chars[j], s.x, cy);
+            }
         }
         ctx.restore();
 
-        // Scrolling matrix rain characters (faint green)
+        // === MATRIX RAIN (faint) ===
         ctx.save();
         ctx.font = '11px monospace';
         for (let i = 0; i < matrixCols; i++) {
             const drop = matrixDrops[i];
             const y = drop * 14;
             if (y > 0 && y < H + 14) {
-                // Lead char brighter
-                const alpha = 0.18 + Math.sin(bgFrame * 0.05 + i) * 0.04;
-                ctx.fillStyle = `rgba(0,255,65,${alpha + 0.1})`;
+                const alpha = 0.08 + Math.sin(bgFrame * 0.04 + i) * 0.02;
+                ctx.fillStyle = `rgba(0,255,65,${alpha})`;
                 const ch = matrixChars[Math.floor((bgFrame + i * 7) % matrixChars.length)];
                 ctx.fillText(ch, i * 12 + 1, y);
-                // Trail
-                for (let t = 1; t < 5; t++) {
-                    const ty = y - t * 14;
-                    if (ty < 0) continue;
-                    const ta = Math.max(0, alpha - t * 0.04);
-                    ctx.fillStyle = `rgba(0,200,50,${ta})`;
-                    const tc = matrixChars[Math.floor((bgFrame - t * 3 + i * 5) % matrixChars.length)];
-                    ctx.fillText(tc, i * 12 + 1, ty);
-                }
             }
-            matrixDrops[i] += 0.25;
+            matrixDrops[i] += 0.18;
             if (matrixDrops[i] * 14 > H && Math.random() > 0.985) matrixDrops[i] = Math.random() * -20;
         }
         ctx.restore();
+
+        // === SCAN LINE EFFECT ===
+        const scanY = (bgFrame * 2) % (H + 20) - 10;
+        ctx.fillStyle = 'rgba(0,255,80,0.03)';
+        ctx.fillRect(0, scanY, W, 3);
     }
 
     function drawVirus(v) {
@@ -797,8 +822,8 @@
     }
 
     function loop() {
-        update();
-        draw();
+        try { update(); } catch(e) { console.error('update error:', e); }
+        try { draw(); } catch(e) { console.error('draw error:', e); }
         raf = requestAnimationFrame(loop);
     }
 
