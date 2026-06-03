@@ -366,12 +366,14 @@
             const allItems = [...STORE.subs, ...STORE.perks, ...STORE.exclusive];
             const item = allItems.find(i => i.id === itemId);
             if (!item) return;
-            if (currentBalance < item.price) { showToast('Not enough CC. Earn more in your wallet.', 'error'); return; }
+            if (!isOwner && currentBalance < item.price) { showToast('Not enough CC. Earn more in your wallet.', 'error'); return; }
             pendingItem = item;
-            document.getElementById('modal-title').textContent = `Buy ${item.name}`;
+            const cost = isOwner ? 0 : item.price;
+            document.getElementById('modal-title').textContent = isOwner ? `Give Free: ${item.name}` : `Buy ${item.name}`;
             document.getElementById('modal-desc').innerHTML =
-                `Purchase <strong>${escHtml(item.name)}</strong> for <strong style="color:#818cf8;">${item.price.toLocaleString()} CC</strong>?<br><br>` +
-                `<span style="color:var(--text-muted);font-size:0.85rem;">Balance after: ${(currentBalance-item.price).toLocaleString()} CC</span><br><br>` +
+                `${isOwner ? '<strong style="color:#fbbf24;">Owner override — no CC deducted.</strong><br><br>' : ''}` +
+                `Purchase <strong>${escHtml(item.name)}</strong> for <strong style="color:#818cf8;">${cost === 0 ? 'FREE' : cost.toLocaleString() + ' CC'}</strong>?<br><br>` +
+                `${!isOwner ? `<span style="color:var(--text-muted);font-size:0.85rem;">Balance after: ${(currentBalance-cost).toLocaleString()} CC</span><br><br>` : ''}` +
                 `<span style="color:var(--text-muted);font-size:0.82rem;">⚠️ Open a Discord ticket after purchase. Staff will apply your reward within 24h.</span>`;
             document.getElementById('buy-modal').classList.add('open');
         }
