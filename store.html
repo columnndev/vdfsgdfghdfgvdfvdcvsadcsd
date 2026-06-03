@@ -382,31 +382,31 @@
         document.getElementById('buy-modal').addEventListener('click', e => { if(e.target===document.getElementById('buy-modal')) closeBuyModal(); });
 
         document.getElementById('buy-confirm-btn').addEventListener('click', async () => {
-            if (!pendingItem) return;
+            const item = pendingItem;
+            if (!item) return;
+            pendingItem = item; // keep reference during async
             const btn = document.getElementById('buy-confirm-btn');
             btn.disabled = true; btn.textContent = 'Processing...';
             try {
                 if (!isOwner) {
-                    const cost = pendingItem.price;
+                    const cost = item.price;
                     const newBal = currentBalance - cost;
                     const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBal.toString());
                     if (!res.success) { showToast('Failed: ' + (res.message||'error'), 'error'); btn.disabled=false; btn.textContent='Confirm'; return; }
                     updateBalance(newBal);
-                    ownedItems.push(pendingItem.id);
+                    ownedItems.push(item.id);
                     await keyAuthSetVar(currentSessionId, 'cc_owned', JSON.stringify(ownedItems));
                     const txVar = await keyAuthGetVar(currentSessionId, 'cc_log');
                     let txArr = []; try { txArr = JSON.parse(txVar.response||'[]'); } catch(e){}
-                    txArr.push({ desc: `Bought: ${pendingItem.name}`, amount: -cost, date: new Date().toLocaleString(), key: savedKey.substring(0,8)+'...' });
+                    txArr.push({ desc: `Bought: ${item.name}`, amount: -cost, date: new Date().toLocaleString(), key: savedKey.substring(0,8)+'...' });
                     if(txArr.length>20) txArr = txArr.slice(-20);
                     await keyAuthSetVar(currentSessionId, 'cc_log', JSON.stringify(txArr));
-                    // Save order to GitHub for owner to see
-                    await saveOrder(pendingItem.name, cost);
+                    await saveOrder(item.name, cost);
                 } else {
-                    // Owner — just mark as owned locally, no CC deducted
-                    ownedItems.push(pendingItem.id);
+                    ownedItems.push(item.id);
                 }
                 closeBuyModal();
-                showToast(`${pendingItem.name} ordered! Open a Discord ticket to redeem.`, 'success');
+                showToast(`${item.name} ordered! Open a Discord ticket to redeem.`, 'success');
                 renderAll();
             } catch(e) { showToast('Purchase failed: ' + e.message, 'error'); }
             finally { btn.disabled=false; btn.textContent='Confirm'; }
