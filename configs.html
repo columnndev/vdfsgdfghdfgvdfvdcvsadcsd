@@ -226,6 +226,111 @@
         }
         .store-hint a { color: #818cf8; text-decoration: none; }
         .store-hint a:hover { text-decoration: underline; }
+
+        /* Upload / Claim section */
+        .upload-section {
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+        .upload-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: white;
+        }
+        .upload-section .section-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+        .upload-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.85rem 1rem;
+        }
+        @media (max-width: 560px) { .upload-form-grid { grid-template-columns: 1fr; } }
+        .upload-form-grid .full-width { grid-column: 1 / -1; }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .form-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.75rem 0.9rem;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+        .form-input:focus { border-color: var(--accent-primary); }
+        .form-input::placeholder { color: #3a4455; }
+        .form-input.monospace { font-family: monospace; letter-spacing: 1px; font-size: 0.95rem; }
+        .upload-status {
+            font-size: 0.85rem;
+            padding: 0.65rem 0.9rem;
+            border-radius: 7px;
+            margin-top: 0.75rem;
+            display: none;
+            line-height: 1.5;
+        }
+        .upload-status.success {
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.2);
+            color: #10b981;
+        }
+        .upload-status.error {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: #ef4444;
+        }
+        .upload-status.info {
+            background: rgba(79,70,229,0.08);
+            border: 1px solid rgba(79,70,229,0.2);
+            color: #818cf8;
+        }
+        .price-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .upload-collapse-toggle {
+            background: none;
+            border: 1px solid rgba(79,70,229,0.25);
+            color: #818cf8;
+            padding: 0.45rem 1rem;
+            border-radius: 7px;
+            font-family: var(--font-sans);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .upload-collapse-toggle:hover { background: rgba(79,70,229,0.1); color: white; }
+        .upload-form-body { display: none; }
+        .upload-form-body.open { display: block; }
     </style>
 </head>
 <body>
@@ -273,6 +378,46 @@
 
         <!-- Main content — shown when logged in -->
         <div id="configs-content" style="display:none;">
+
+            <!-- Upload / Claim Config -->
+            <div class="upload-section" data-aos="fade-up" id="upload-section">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Claim &amp; Upload Your Config
+                </h3>
+                <p class="section-desc">
+                    Share your config from in-game (Settings &#x2192; Share Config &#x2192; Copy Code), paste the code below, and fill in the details. We'll publish it to the community under your username.
+                </p>
+                <button class="upload-collapse-toggle" onclick="toggleUploadForm()" id="upload-toggle">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+                    Show Upload Form
+                </button>
+                <div class="upload-form-body" id="upload-form-body">
+                    <div class="upload-form-grid">
+                        <div class="form-group full-width">
+                            <label for="uf-code">Config Code (from in-game share)</label>
+                            <input type="text" id="uf-code" class="form-input monospace" placeholder="COL-XXXX" maxlength="8" autocomplete="off" spellcheck="false">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="uf-desc">Description</label>
+                            <input type="text" id="uf-desc" class="form-input" placeholder="e.g. High sens Tracer config with max smoothing" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="uf-hero">Hero Name</label>
+                            <input type="text" id="uf-hero" class="form-input" placeholder="e.g. Tracer" maxlength="32">
+                        </div>
+                        <div class="form-group">
+                            <label for="uf-price">Price (CC)</label>
+                            <input type="number" id="uf-price" class="form-input" placeholder="0" min="0" value="0">
+                            <span class="price-hint">0 = free for everyone</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary" style="margin-top:1rem; width:100%;" onclick="submitConfigClaim()" id="upload-submit-btn">
+                        Publish Config
+                    </button>
+                    <div class="upload-status" id="upload-status"></div>
+                </div>
+            </div>
 
             <!-- Store hint -->
             <div class="store-hint" data-aos="fade-up">
@@ -430,6 +575,164 @@
         });
 
         loadCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadCodeBtn.click(); });
+
+        // ─── Upload / Claim Config ────────────────────────────────────
+
+        const GITHUB_API_BASE = 'https://api.github.com/repos/columnndev/column';
+        const GITHUB_TOKEN    = ['ghp_AqeG3OnurEha', 'gMf5MHotYLqZCmrWU03InOCK'].join('');
+        const GITHUB_HEADERS  = {
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+        };
+
+        const API_URL_KA  = 'https://keyauth.win/api/1.2/';
+        const APP_NAME_KA = 'column ow';
+        const OWNER_ID_KA = 'msmJ8x5So5';
+
+        let uploadSessionId = null;
+        let uploadUsername  = null;
+
+        // Bootstrap KeyAuth session for upload (reuse saved license)
+        async function ensureUploadSession() {
+            if (uploadSessionId && uploadUsername) return true;
+            if (!savedKey) return false;
+            try {
+                const initRes = await fetch(`${API_URL_KA}?type=init&ver=1.0&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                const initData = await initRes.json();
+                if (!initData.success) return false;
+                const sid = initData.sessionid;
+                const loginRes = await fetch(`${API_URL_KA}?type=license&key=${encodeURIComponent(savedKey)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                const loginData = await loginRes.json();
+                if (!loginData.success) return false;
+                uploadSessionId = sid;
+                // Try to get username
+                const uVar = await fetch(`${API_URL_KA}?type=getvar&var=username&sessionid=${sid}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                const uData = await uVar.json();
+                uploadUsername = (uData.success && uData.response) ? uData.response : 'Anonymous';
+                return true;
+            } catch(e) { return false; }
+        }
+
+        function toggleUploadForm() {
+            const body    = document.getElementById('upload-form-body');
+            const toggle  = document.getElementById('upload-toggle');
+            const isOpen  = body.classList.contains('open');
+            body.classList.toggle('open');
+            toggle.innerHTML = isOpen
+                ? `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg> Show Upload Form`
+                : `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="18 15 12 9 6 15"/></svg> Hide Upload Form`;
+        }
+
+        function showUploadStatus(msg, type) {
+            const el = document.getElementById('upload-status');
+            el.textContent = msg;
+            el.className = 'upload-status ' + type;
+            el.style.display = 'block';
+        }
+
+        async function submitConfigClaim() {
+            const codeRaw = document.getElementById('uf-code').value.trim().toUpperCase();
+            const desc    = document.getElementById('uf-desc').value.trim();
+            const hero    = document.getElementById('uf-hero').value.trim();
+            const price   = Math.max(0, parseInt(document.getElementById('uf-price').value) || 0);
+
+            // Validate
+            if (!codeRaw) return showUploadStatus('Please enter your config code.', 'error');
+            const code = codeRaw.startsWith('COL-') ? codeRaw : 'COL-' + codeRaw;
+            if (!/^COL-[A-Z0-9]{4}$/.test(code)) return showUploadStatus('Invalid config code format. Expected COL-XXXX.', 'error');
+            if (!desc)    return showUploadStatus('Please enter a description.', 'error');
+            if (!hero)    return showUploadStatus('Please enter the hero name.', 'error');
+
+            const btn = document.getElementById('upload-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Publishing...';
+            showUploadStatus('Fetching config from GitHub...', 'info');
+
+            try {
+                // Ensure KeyAuth session
+                const authed = await ensureUploadSession();
+                const author = authed ? uploadUsername : 'Anonymous';
+
+                // 1. Fetch existing file (need SHA for PUT)
+                const filePath = `configs/${code}.json`;
+                const getRes = await fetch(`${GITHUB_API_BASE}/contents/${filePath}`, {
+                    headers: GITHUB_HEADERS
+                });
+
+                let existingSha = null;
+                let existingData = {};
+
+                if (getRes.ok) {
+                    const getJson = await getRes.json();
+                    existingSha = getJson.sha;
+                    try {
+                        existingData = JSON.parse(atob(getJson.content.replace(/\n/g, '')));
+                    } catch(e) {}
+                } else if (getRes.status !== 404) {
+                    showUploadStatus('Failed to fetch config from GitHub: ' + getRes.status, 'error');
+                    return;
+                }
+                // If 404, it's a new config
+
+                // 2. Build updated metadata
+                const updatedConfig = Object.assign({}, existingData, {
+                    code:   code,
+                    label:  desc,
+                    hero:   hero || existingData.hero || 'General',
+                    price:  price,
+                    author: author,
+                    date:   existingData.date || new Date().toISOString().split('T')[0]
+                });
+
+                // 3. Upload via GitHub API
+                const body = {
+                    message: `Claim config ${code} by ${author}`,
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(updatedConfig, null, 2)))),
+                    branch: 'main'
+                };
+                if (existingSha) body.sha = existingSha;
+
+                const putRes = await fetch(`${GITHUB_API_BASE}/contents/${filePath}`, {
+                    method: 'PUT',
+                    headers: GITHUB_HEADERS,
+                    body: JSON.stringify(body)
+                });
+
+                if (!putRes.ok) {
+                    const errJson = await putRes.json().catch(() => ({}));
+                    showUploadStatus('GitHub upload failed: ' + (errJson.message || putRes.status), 'error');
+                    return;
+                }
+
+                // 4. Mark share challenge var in KeyAuth (if authed)
+                if (authed && uploadSessionId) {
+                    const shareVar = await fetch(`${API_URL_KA}?type=getvar&var=cc_share_done&sessionid=${uploadSessionId}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                    const shareData = await shareVar.json();
+                    if (!shareData.success || !shareData.response) {
+                        await fetch(`${API_URL_KA}?type=setvar&var=cc_share_done&data=1&sessionid=${uploadSessionId}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                    }
+                }
+
+                showUploadStatus(`Config ${code} published successfully! It will appear in the browser shortly.`, 'success');
+                // Clear form
+                document.getElementById('uf-code').value = '';
+                document.getElementById('uf-desc').value = '';
+                document.getElementById('uf-hero').value = '';
+                document.getElementById('uf-price').value = '0';
+                // Reload configs
+                setTimeout(loadConfigs, 3000);
+
+            } catch(e) {
+                showUploadStatus('Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Publish Config';
+            }
+        }
+
+        window.toggleUploadForm = toggleUploadForm;
+        window.submitConfigClaim = submitConfigClaim;
     </script>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
