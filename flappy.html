@@ -249,17 +249,17 @@
     const ctx    = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
 
-    const GRAVITY   = 0.28;
-    const FLAP      = -7.2;
-    const PIPE_W    = 55;
-    const BASE_GAP  = 195; // starts easy, shrinks with score
-    const BASE_SPEED= 2.0; // starts slow, increases with score
+    const GRAVITY   = 0.22;
+    const FLAP      = -6.5;
+    const PIPE_W    = 52;
+    const BASE_GAP  = 220;
+    const BASE_SPEED= 1.6;
     const COIN_R    = 11;
 
-    // Progressive difficulty — gets harder as score increases
-    function getPipeGap() { return Math.max(130, BASE_GAP - score * 0.8); }
-    function getPipeSpeed() { return Math.min(5.5, BASE_SPEED + score * 0.04); }
-    function getPipeInterval() { return Math.floor(Math.max(70, 120 - score * 0.5)); }
+    // Progressive difficulty
+    function getPipeGap() { return Math.max(140, BASE_GAP - score * 0.7); }
+    function getPipeSpeed() { return Math.min(5.0, BASE_SPEED + score * 0.035); }
+    function getPipeInterval() { return Math.floor(Math.max(75, 130 - score * 0.5)); }
 
     let bird, pipes, coins, score, bestScore, ccCoins, gameTime, gameState, raf;
     let viruses = [];
@@ -303,10 +303,10 @@
     }
 
     function spawnPipe() {
-        const gap = 180; // fixed gap always visible, ignore progressive for now
-        const minY = 100;
-        const maxY = H - 100 - gap;
-        const topH = minY + Math.random() * Math.max(1, maxY - minY);
+        const gap = Math.max(140, getPipeGap());
+        const minY = 80;
+        const maxY = H - 80 - gap;
+        const topH = minY + Math.random() * Math.max(10, maxY - minY);
         pipes.push({ x: W + 10, topH, gap });
         // 40% chance to spawn a coin in the gap
         if (Math.random() < 0.4) {
