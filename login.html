@@ -213,7 +213,6 @@
                 <a href="status.html">Status</a>
                 <a href="configs.html">Configs</a>
                 <a href="store.html">Store</a>
-                <a href="flappy.html">Flappy CC</a>
             </nav>
             <div class="nav-actions">
                 <a href="wallet.html" class="btn-secondary desktop-only">Wallet</a>
@@ -336,6 +335,20 @@
                         <svg class="loader-icon" id="reset-hwid-loader" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" style="display: none;"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4" stroke-dashoffset="0"></circle></svg>
                     </button>
                     <button id="logout-btn" class="btn-secondary btn-block">Logout</button>
+                </div>
+            </div>
+
+            <!-- Orders Section -->
+            <div id="orders-section" style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="font-size: 1rem; font-weight: 700; color: white; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 1px;">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="#818cf8" stroke-width="2" fill="none"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <span style="color: rgba(255,255,255,0.4);">Orders</span>
+                    </h3>
+                    <button id="refresh-orders-btn" onclick="loadOrders()" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,0.4); padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer;">Refresh</button>
+                </div>
+                <div id="orders-list" style="display: flex; flex-direction: column; gap: 8px; min-height: 48px;">
+                    <div style="color: rgba(255,255,255,0.25); font-size: 0.82rem; text-align: center; padding: 1rem 0;">Loading orders...</div>
                 </div>
             </div>
 
@@ -734,6 +747,134 @@
                 licenseKeyInput.value = saved;
             }
         });
+
+        // ── Orders ────────────────────────────────────────────────────────────
+        const ORDERS_REPO_API = 'https://api.github.com/repos/columnndev/column/contents/orders';
+        const OWNER_KEY = 'owner-8ivWfL-DGBLsO';
+
+        function getOrderToken() {
+            return atob('Z2hwX0FxZUczT251ckVoYWdNZjVNSG90WUxxWkNtV1UwM0luT0NL');
+        }
+
+        function statusBadge(status) {
+            if (status === 'done') {
+                return `<span style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">done</span>`;
+            }
+            return `<span style="background:rgba(251,191,36,0.12);color:#fbbf24;border:1px solid rgba(251,191,36,0.25);padding:2px 8px;border-radius:4px;font-size:0.75rem;font-weight:600;">pending</span>`;
+        }
+
+        async function markOrderDone(filename, sha) {
+            const btn = document.getElementById('mark-done-' + filename);
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+            try {
+                // Fetch current content
+                const rawUrl = `https://raw.githubusercontent.com/columnndev/column/main/orders/${filename}`;
+                const res = await fetch(rawUrl);
+                const orderData = await res.json();
+                orderData.status = 'done';
+                const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(orderData, null, 2))));
+
+                // Get latest SHA for this file
+                const metaRes = await fetch(`https://api.github.com/repos/columnndev/column/contents/orders/${filename}`, {
+                    headers: { 'Authorization': 'token ' + getOrderToken() }
+                });
+                const meta = await metaRes.json();
+
+                // PUT update
+                const putRes = await fetch(`https://api.github.com/repos/columnndev/column/contents/orders/${filename}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': 'token ' + getOrderToken(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Mark order ${filename} as done`,
+                        content: newContent,
+                        sha: meta.sha
+                    })
+                });
+                if (putRes.ok) {
+                    loadOrders(); // Reload
+                } else {
+                    if (btn) { btn.disabled = false; btn.textContent = 'Mark Done'; }
+                    alert('Failed to update order.');
+                }
+            } catch(e) {
+                if (btn) { btn.disabled = false; btn.textContent = 'Mark Done'; }
+                alert('Error updating order: ' + e.message);
+            }
+        }
+
+        async function loadOrders() {
+            const savedKey = localStorage.getItem('saved_license');
+            if (!savedKey) return;
+
+            const isOwner = savedKey === OWNER_KEY;
+            const listEl = document.getElementById('orders-list');
+            if (!listEl) return;
+            listEl.innerHTML = '<div style="color:rgba(255,255,255,0.25);font-size:0.82rem;text-align:center;padding:1rem 0;">Loading...</div>';
+
+            try {
+                const res = await fetch(ORDERS_REPO_API);
+                if (!res.ok) { listEl.innerHTML = '<div style="color:rgba(255,255,255,0.2);font-size:0.82rem;text-align:center;padding:1rem 0;">No orders found.</div>'; return; }
+                const files = await res.json();
+                if (!Array.isArray(files) || files.length === 0) {
+                    listEl.innerHTML = '<div style="color:rgba(255,255,255,0.2);font-size:0.82rem;text-align:center;padding:1rem 0;">No orders yet.</div>';
+                    return;
+                }
+
+                // Filter: owner sees all, paid user sees only files with their key prefix
+                const keyPrefix = savedKey.substring(0, 8).toLowerCase();
+                const filtered = files.filter(f => {
+                    if (!f.name.endsWith('.json')) return false;
+                    if (isOwner) return true;
+                    return f.name.toLowerCase().includes(keyPrefix);
+                });
+
+                if (filtered.length === 0) {
+                    listEl.innerHTML = '<div style="color:rgba(255,255,255,0.2);font-size:0.82rem;text-align:center;padding:1rem 0;">No orders for your key.</div>';
+                    return;
+                }
+
+                // Fetch each order file content
+                const orderItems = await Promise.all(filtered.map(async f => {
+                    try {
+                        const raw = await fetch(f.download_url);
+                        const data = await raw.json();
+                        return { filename: f.name, sha: f.sha, data };
+                    } catch(e) { return null; }
+                }));
+
+                let html = '';
+                for (const item of orderItems) {
+                    if (!item) continue;
+                    const d = item.data;
+                    const itemName = d.item || d.name || item.filename.replace('.json','');
+                    const date = d.date ? new Date(d.date).toLocaleDateString() : '—';
+                    const status = d.status || 'pending';
+                    html += `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:0.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.88rem;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${itemName}</div>
+                            <div style="font-size:0.76rem;color:rgba(255,255,255,0.35);margin-top:2px;">${date}</div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            ${statusBadge(status)}
+                            ${isOwner && status !== 'done' ? `<button id="mark-done-${item.filename}" onclick="markOrderDone('${item.filename}','${item.sha}')" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.25);padding:3px 10px;border-radius:5px;font-size:0.76rem;cursor:pointer;font-weight:600;">Mark Done</button>` : ''}
+                        </div>
+                    </div>`;
+                }
+                listEl.innerHTML = html || '<div style="color:rgba(255,255,255,0.2);font-size:0.82rem;text-align:center;padding:1rem 0;">No orders.</div>';
+            } catch(e) {
+                listEl.innerHTML = '<div style="color:rgba(255,100,100,0.5);font-size:0.82rem;text-align:center;padding:1rem 0;">Failed to load orders.</div>';
+            }
+        }
+
+        // Hook into showDashboard to trigger order loading
+        const _origShowDashboard = showDashboard;
+        showDashboard = async function(key, expiry, username) {
+            await _origShowDashboard(key, expiry, username);
+            loadOrders();
+        };
     </script>
 </body>
 </html>
