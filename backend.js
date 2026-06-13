@@ -13,8 +13,11 @@ const BACKEND = {
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ itemId, itemName, priceUsd, discordRef })
         });
-        if (!r.ok) throw new Error('checkout failed');
-        return r.json();
+        const data = await r.json().catch(() => ({}));
+        // 409 = the saved Discord link expired; caller should reconnect.
+        if (r.status === 409 && data.needDiscord) return { needDiscord: true };
+        if (!r.ok) throw new Error(data.error || 'checkout failed');
+        return data;
     },
 
     // Poll order status until the key is delivered.

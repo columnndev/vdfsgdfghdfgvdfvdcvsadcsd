@@ -224,14 +224,22 @@ document.addEventListener('DOMContentLoaded', () => {
         checkoutBtn.disabled = true;
         checkoutBtn.textContent = 'Creating invoice…';
         try {
-            const { orderId, invoiceUrl } = await BACKEND.checkout({
+            const res = await BACKEND.checkout({
                 itemId: primary.id,
                 itemName: cart.map(i => `${i.name} x${i.qty}`).join(', '),
                 priceUsd: Number(total.toFixed(2)),
                 discordRef: ref
             });
-            localStorage.setItem('pending_order', orderId);
-            window.location.href = invoiceUrl; // go to the hosted crypto checkout
+            // Saved Discord link expired on the server — reconnect, then they
+            // come back and click Checkout again (cart is preserved).
+            if (res.needDiscord) {
+                localStorage.removeItem('discord_ref');
+                showToast('Please reconnect Discord to receive your role…');
+                setTimeout(() => { location.href = BACKEND.discordLoginUrl(); }, 900);
+                return;
+            }
+            localStorage.setItem('pending_order', res.orderId);
+            window.location.href = res.invoiceUrl; // go to the hosted crypto checkout
         } catch (e) {
             showToast('Checkout failed: ' + e.message);
             checkoutBtn.disabled = false;
