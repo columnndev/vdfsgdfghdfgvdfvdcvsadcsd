@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Column - Flappy CC</title>
+    <meta property="og:title" content="Column | Flappy CC">
+    <meta property="og:description" content="Play Flappy CC and earn Column Coins. High scores unlock real rewards.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/columnndev/column/main/logo.png">
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="security.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #050508; color: white; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(5,5,8,0.9); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 0 2rem; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo { display: flex; align-items: center; gap: 0.8rem; }
+        .nav-logo img { height: 36px; mix-blend-mode: screen; }
+        .nav-logo span { font-weight: 800; font-size: 1.1rem; color: white; }
+        .nav-links { display: flex; gap: 1.5rem; }
+        .nav-links a { color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.9rem; transition: color 0.2s; }
+        .nav-links a:hover, .nav-links a.active { color: white; }
+        .nav-actions { display: flex; gap: 0.75rem; align-items: center; }
+        .btn-sm { padding: 0.4rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600; cursor: pointer; border: none; text-decoration: none; }
+        .btn-secondary { background: rgba(255,255,255,0.06); color: white; border: 1px solid rgba(255,255,255,0.1); }
+        .btn-primary { background: var(--accent, #4f46e5); color: white; }
+
+        .game-page { padding-top: 64px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+
+        .game-header { text-align: center; padding: 2rem 1rem 1rem; }
+        .game-header h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.4rem; }
+        .game-header p { color: rgba(255,255,255,0.5); font-size: 0.9rem; }
+        .text-gradient { background: linear-gradient(135deg, #4f46e5, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+        .game-layout { display: flex; gap: 2rem; padding: 1rem 2rem 2rem; width: 100%; max-width: 1100px; justify-content: center; flex-wrap: wrap; }
+
+        /* CANVAS */
+        #game-canvas {
+            border-radius: 16px;
+            border: 2px solid rgba(79,70,229,0.3);
+            box-shadow: 0 0 40px rgba(79,70,229,0.15);
+            display: block;
+            cursor: pointer;
+        }
+
+        /* SIDE PANEL */
+        .side-panel { width: 260px; display: flex; flex-direction: column; gap: 1rem; }
+
+        .panel-card {
+            background: rgba(15,15,22,0.8);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px; padding: 1.25rem;
+        }
+        .panel-card h3 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.4); margin-bottom: 0.75rem; }
+
+        .stat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .stat-label { font-size: 0.85rem; color: rgba(255,255,255,0.5); }
+        .stat-value { font-size: 0.95rem; font-weight: 700; color: white; }
+        .stat-value.gold { color: #fbbf24; }
+        .stat-value.green { color: #10b981; }
+        .stat-value.purple { color: #818cf8; }
+
+        .milestone-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .milestone-item {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.6rem 0.75rem; border-radius: 8px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.82rem;
+        }
+        .milestone-item.reached { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .milestone-item .mi-icon { font-size: 1.1rem; }
+        .milestone-item .mi-text { flex: 1; color: rgba(255,255,255,0.6); }
+        .milestone-item.reached .mi-text { color: #10b981; }
+        .milestone-item .mi-score { font-weight: 700; color: rgba(255,255,255,0.3); font-size: 0.78rem; }
+
+        .claim-btn {
+            width: 100%; padding: 0.75rem; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+            transition: all 0.2s; margin-top: 0.5rem;
+        }
+        .claim-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(79,70,229,0.3); }
+        .claim-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .how-to { font-size: 0.82rem; color: rgba(255,255,255,0.4); line-height: 1.6; }
+        .how-to strong { color: rgba(255,255,255,0.7); }
+
+        .login-hint {
+            background: rgba(79,70,229,0.08); border: 1px solid rgba(79,70,229,0.2);
+            border-radius: 10px; padding: 0.9rem 1rem; font-size: 0.83rem;
+            color: rgba(255,255,255,0.5); text-align: center; line-height: 1.5;
+        }
+        .login-hint a { color: #818cf8; text-decoration: none; font-weight: 600; }
+
+        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: rgba(20,20,30,0.97); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #4f46e5; color: white; padding: 0.9rem 1.25rem; border-radius: 10px; font-size: 0.88rem; font-weight: 500; transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275); max-width: 300px; }
+        .toast.show { transform: translateX(0); }
+        .toast.success { border-left-color: #10b981; }
+        .toast.error { border-left-color: #ef4444; }
+        .toast.gold { border-left-color: #fbbf24; }
+
+        @media (max-width: 700px) {
+            .nav-links { display: none; }
+            #game-canvas { width: 360px !important; height: 480px !important; }
+            .side-panel { width: 340px; }
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="nav-logo">
+            <img src="logo.png" alt="Column">
+            <span>COLUMN</span>
+        </div>
+        <nav class="nav-links">
+            <a href="index.html#home">Home</a>
+            <a href="configs.html">Configs</a>
+            <a href="store.html">Store</a>
+            <a href="wallet.html">Wallet</a>
+            <a href="flappy.html" class="active">Flappy CC</a>
+        </nav>
+        <div class="nav-actions">
+            <a href="login.html" class="btn-sm btn-secondary">Portal</a>
+            <a href="wallet.html" class="btn-sm btn-primary">Wallet</a>
+        </div>
+    </header>
+
+    <div class="game-page">
+        <div class="game-header">
+            <h1>Flappy <span class="text-gradient">CC</span></h1>
+            <p>Collect coins, survive longer, earn real Column Coins. Press Space or tap to play.</p>
+        </div>
+
+        <div class="game-layout">
+            <canvas id="game-canvas" width="600" height="600"></canvas>
+
+            <div class="side-panel">
+                <!-- Stats -->
+                <div class="panel-card">
+                    <h3>This Run</h3>
+                    <div class="stat-row"><span class="stat-label">Score</span><span class="stat-value purple" id="ui-score">0</span></div>
+                    <div class="stat-row"><span class="stat-label">CC Coins</span><span class="stat-value gold" id="ui-coins">0</span></div>
+                    <div class="stat-row"><span class="stat-label">Time</span><span class="stat-value" id="ui-time">0s</span></div>
+                    <div class="stat-row"><span class="stat-label">Best Score</span><span class="stat-value green" id="ui-best">0</span></div>
+                </div>
+
+                <!-- Milestones -->
+                <div class="panel-card">
+                    <h3>Milestones</h3>
+                    <div class="milestone-list">
+                        <div class="milestone-item" id="ms-10"><span class="mi-icon">⚡</span><span class="mi-text">Score 10 → 50 CC</span><span class="mi-score">10</span></div>
+                        <div class="milestone-item" id="ms-25"><span class="mi-icon">🔥</span><span class="mi-text">Score 25 → 150 CC</span><span class="mi-score">25</span></div>
+                        <div class="milestone-item" id="ms-50"><span class="mi-icon">💎</span><span class="mi-text">Score 50 → 400 CC</span><span class="mi-score">50</span></div>
+                        <div class="milestone-item" id="ms-100"><span class="mi-icon">👑</span><span class="mi-text">Score 100 → 1 Day Key!</span><span class="mi-score">100</span></div>
+                    </div>
+                    <button class="claim-btn" id="claim-btn" disabled>Login to Claim Rewards</button>
+                    <div id="claim-status" style="font-size:0.8rem;color:rgba(255,255,255,0.4);margin-top:0.5rem;text-align:center;"></div>
+                </div>
+
+                <!-- How to -->
+                <div class="panel-card">
+                    <h3>How It Works</h3>
+                    <p class="how-to">
+                        <strong>Space / Tap</strong> to flap.<br>
+                        Dodge pipes, collect <strong style="color:#fbbf24;">⬡ coins</strong> mid-air.<br>
+                        Coins = bonus CC. Survive longer = more score.<br><br>
+                        <strong>Paid users</strong> get 2× CC multiplier.<br>
+                        Score <strong>100</strong> to win a <strong style="color:#10b981;">1-day key</strong>.
+                    </p>
+                </div>
+
+                <div class="login-hint" id="login-hint" style="display:none;">
+                    <a href="login.html">Login</a> to claim CC rewards and 1-day keys after your run.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+    // ── Auth state ────────────────────────────────────────────────────────────
+    const API_URL  = 'https://keyauth.win/api/1.2/';
+    const APP_NAME = 'column ow';
+    const OWNER_ID = 'msmJ8x5So5';
+    const savedKey = localStorage.getItem('saved_license');
+    let sessionId = null, userBalance = 0, isPaid = false;
+
+    const MILESTONES = [
+        { id: 'ms-10',  score: 10,  cc: 50,   key: false },
+        { id: 'ms-25',  score: 25,  cc: 150,  key: false },
+        { id: 'ms-50',  score: 50,  cc: 400,  key: false },
+        { id: 'ms-100', score: 100, cc: 1000, key: true  },
+    ];
+
+    async function kaInit() {
+        const r = await fetch(`${API_URL}?type=init&ver=1.0&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`);
+        const d = await r.json(); return d.success ? d.sessionid : null;
+    }
+    async function kaLogin(key, sid) {
+        const r = await fetch(`${API_URL}?type=license&key=${encodeURIComponent(key)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`);
+        return r.json();
+    }
+    async function kaGetVar(sid, name) {
+        try { const r = await fetch(`${API_URL}?type=getvar&var=${encodeURIComponent(name)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`); return r.json(); } catch(e) { return {success:false}; }
+    }
+    async function kaSetVar(sid, name, val) {
+        try { const r = await fetch(`${API_URL}?type=setvar&var=${encodeURIComponent(name)}&data=${encodeURIComponent(val)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`); return r.json(); } catch(e) { return {success:false}; }
+    }
+
+    function showToast(msg, type='info') {
+        const tc = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = 'toast ' + type; t.textContent = msg; tc.appendChild(t);
+        requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+        setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 4000);
+    }
+
+    async function initAuth() {
+        if (!savedKey) {
+            document.getElementById('login-hint').style.display = 'block';
+            document.getElementById('claim-btn').textContent = 'Login to Claim';
+            return;
+        }
+        try {
+            sessionId = await kaInit();
+            if (!sessionId) return;
+            const login = await kaLogin(savedKey, sessionId);
+            if (!login.success) return;
+            isPaid = true; // has a valid license = paid user
+            const balVar = await kaGetVar(sessionId, 'cc_balance');
+            userBalance = parseInt(balVar.success && balVar.response ? balVar.response : '0') || 0;
+            document.getElementById('claim-btn').disabled = true;
+            document.getElementById('claim-btn').textContent = 'Claim Rewards';
+        } catch(e) {}
+    }
+
+    // ── Game ──────────────────────────────────────────────────────────────────
+    const canvas = document.getElementById('game-canvas');
+    const ctx    = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+
+    const GRAVITY   = 0.22;
+    const FLAP      = -6.5;
+    const PIPE_W    = 52;
+    const BASE_GAP  = 220;
+    const BASE_SPEED= 1.6;
+    const COIN_R    = 11;
+
+    // Progressive difficulty
+    function getPipeGap() { return Math.max(140, BASE_GAP - score * 0.7); }
+    function getPipeSpeed() { return Math.min(5.0, BASE_SPEED + score * 0.035); }
+    function getPipeInterval() { return Math.floor(Math.max(75, 130 - score * 0.5)); }
+
+    let bird, pipes, coins, score, bestScore, ccCoins, gameTime, gameState, raf;
+    let viruses = [];
+    let milestonesReached = [];
+    bestScore = parseInt(localStorage.getItem('flappy_best') || '0');
+    document.getElementById('ui-best').textContent = bestScore;
+
+    const COLORS = {
+        sky1: '#030a03', sky2: '#050f05',
+        pipe: '#4f46e5', pipeEdge: '#6366f1',
+        bird: '#00e5ff', birdEye: '#fff', birdPupil: '#003333',
+        coin: '#fbbf24', coinGlow: 'rgba(251,191,36,0.3)',
+        ground: '#020a02', groundLine: '#00ff41',
+        scoreText: '#fff', ccText: '#fbbf24',
+    };
+
+    // Matrix/hacker background state
+    const matrixChars = '01アイウエオABCDEFGHIJKLMNOP$#@%&<>{}[]QRSTUVWXYZ'.split('');
+    const matrixCols = Math.floor(W / 12);
+    const matrixDrops = Array.from({length: matrixCols}, () => Math.random() * -50);
+    let bgFrame = 0;
+
+    // HACKED flash state
+    let hackedFlash = 0;
+
+    function resetGame() {
+        bird    = { x: 90, y: H/2, vy: 0, r: 16, rot: 0 };
+        pipes   = [];
+        coins   = [];
+        viruses = [];
+        score   = 0;
+        ccCoins = 0;
+        gameTime= 0;
+        pipeTimer = -60; // delay first pipe
+        milestonesReached = [];
+        gameState = 'idle'; // idle | running | dead
+        document.querySelectorAll('.milestone-item').forEach(el => el.classList.remove('reached'));
+        document.getElementById('claim-btn').disabled = true;
+        document.getElementById('claim-status').textContent = '';
+        updateUI();
+    }
+
+    function spawnPipe() {
+        const gap = Math.max(140, getPipeGap());
+        const minY = 80;
+        const maxY = H - 80 - gap;
+        const topH = minY + Math.random() * Math.max(10, maxY - minY);
+        pipes.push({ x: W + 10, topH, gap });
+        // 40% chance to spawn a coin in the gap
+        if (Math.random() < 0.4) {
+            coins.push({ x: W + 10 + PIPE_W/2 + 30, y: topH + gap/2 + (Math.random()-0.5)*40, alive: true });
+        }
+        // Spawn virus every 5 pipes after score 10
+        if (score >= 10 && Math.random() < 0.35) {
+            spawnVirus();
+        }
+    }
+
+    function spawnVirus() {
+        const vy = (Math.random() - 0.5) * 2.5;
+        const y = 60 + Math.random() * (H - 120);
+        viruses.push({ x: W + 40, y, vy, angle: 0, r: 14, wobble: Math.random() * Math.PI * 2 });
+    }
+
+    function flap() {
+        if (gameState === 'idle') { gameState = 'running'; }
+        if (gameState === 'running') { bird.vy = FLAP; }
+        if (gameState === 'dead') { resetGame(); gameState = 'running'; bird.vy = FLAP; }
+    }
+
+    canvas.addEventListener('click', flap);
+    document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); flap(); } });
+
+    function updateUI() {
+        document.getElementById('ui-score').textContent = score;
+        document.getElementById('ui-coins').textContent = ccCoins;
+        document.getElementById('ui-time').textContent = Math.floor(gameTime/60) + 's';
+        if (score > bestScore) { bestScore = score; localStorage.setItem('flappy_best', bestScore); document.getElementById('ui-best').textContent = bestScore; }
+    }
+
+    function checkMilestones() {
+        MILESTONES.forEach(m => {
+            if (score >= m.score && !milestonesReached.includes(m.id)) {
+                milestonesReached.push(m.id);
+                document.getElementById(m.id).classList.add('reached');
+                if (m.key) showToast('🏆 Score 100! You earned a 1-Day Key!', 'gold');
+                else showToast(`+${m.cc} CC unlocked at score ${m.score}!`, 'success');
+            }
+        });
+        if (milestonesReached.length > 0 && sessionId) {
+            document.getElementById('claim-btn').disabled = false;
+            document.getElementById('claim-btn').textContent = 'Claim CC Rewards';
+        }
+    }
+
+    function drawBird() {
+        ctx.save();
+        ctx.translate(bird.x, bird.y);
+        bird.rot = Math.max(-0.5, Math.min(1.2, bird.vy * 0.06));
+        ctx.rotate(bird.rot);
+
+        // Outer glow ring
+        ctx.beginPath();
+        ctx.arc(0, 0, bird.r + 4, 0, Math.PI*2);
+        ctx.strokeStyle = 'rgba(0,229,255,0.25)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Body - cyan pixel square-ish shape
+        ctx.shadowColor = '#00e5ff';
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = '#003a40';
+        ctx.fillRect(-bird.r, -bird.r, bird.r * 2, bird.r * 2);
+
+        // Cyan border
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-bird.r, -bird.r, bird.r * 2, bird.r * 2);
+        ctx.shadowBlur = 0;
+
+        // ">" symbol on body (hacker cursor icon)
+        ctx.fillStyle = '#00ff88';
+        ctx.font = 'bold 14px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 8;
+        ctx.fillText('>', 1, 1);
+        ctx.shadowBlur = 0;
+
+        // Small cyan eye dot
+        ctx.fillStyle = '#00e5ff';
+        ctx.beginPath();
+        ctx.arc(bird.r - 5, -bird.r + 5, 3, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.textAlign = 'left';
+        ctx.restore();
+    }
+
+    function drawPipe(p) {
+        const gap = p.gap || 180;
+        const grad = ctx.createLinearGradient(p.x, 0, p.x + PIPE_W, 0);
+        grad.addColorStop(0, '#3730a3');
+        grad.addColorStop(0.5, COLORS.pipe);
+        grad.addColorStop(1, '#3730a3');
+        // Top pipe
+        ctx.fillStyle = grad;
+        ctx.fillRect(p.x, 0, PIPE_W, p.topH);
+        ctx.fillStyle = COLORS.pipeEdge;
+        ctx.fillRect(p.x - 5, p.topH - 18, PIPE_W + 10, 18);
+        // Bottom pipe
+        const botY = p.topH + gap;
+        ctx.fillStyle = grad;
+        ctx.fillRect(p.x, botY, PIPE_W, H - botY);
+        ctx.fillStyle = COLORS.pipeEdge;
+        ctx.fillRect(p.x - 5, botY, PIPE_W + 10, 18);
+    }
+
+    function drawCoin(c) {
+        if (!c.alive) return;
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, COIN_R, 0, Math.PI*2);
+        ctx.fillStyle = COLORS.coinGlow;
+        ctx.shadowColor = COLORS.coin;
+        ctx.shadowBlur = 15;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, COIN_R - 2, 0, Math.PI*2);
+        ctx.fillStyle = COLORS.coin;
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px Inter';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('CC', c.x, c.y);
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
+
+    let pipeTimer = -60; // negative = delay first pipe by 60 extra frames
+    function update() {
+        if (gameState !== 'running') return;
+        gameTime++;
+        const spd = getPipeSpeed();
+
+        // Bird physics
+        bird.vy += GRAVITY;
+        bird.y  += bird.vy;
+
+        // Pipes
+        pipeTimer++;
+        if (pipeTimer > getPipeInterval()) { spawnPipe(); pipeTimer = 0; }
+
+        for (let i = pipes.length - 1; i >= 0; i--) {
+            pipes[i].x -= spd;
+            if (pipes[i].x + PIPE_W < bird.x - bird.r && !pipes[i].scored) {
+                pipes[i].scored = true;
+                score++;
+                checkMilestones();
+            }
+            if (pipes[i].x + PIPE_W < 0) pipes.splice(i, 1);
+        }
+
+        // Coins
+        for (let i = coins.length - 1; i >= 0; i--) {
+            coins[i].x -= spd;
+            if (coins[i].alive) {
+                const dx = bird.x - coins[i].x, dy = bird.y - coins[i].y;
+                if (Math.sqrt(dx*dx+dy*dy) < bird.r + COIN_R) {
+                    coins[i].alive = false;
+                    ccCoins++;
+                    hackedFlash = 40;
+                    showToast('+1 CC Coin!', 'gold');
+                }
+            }
+            if (coins[i].x + COIN_R < 0) coins.splice(i, 1);
+        }
+
+        // Viruses — only active once fully on screen
+        for (let i = viruses.length - 1; i >= 0; i--) {
+            const v = viruses[i];
+            v.x -= spd * 0.75;
+            v.wobble += 0.05;
+            v.y += v.vy + Math.sin(v.wobble) * 0.6;
+            v.angle += 0.04;
+            // Bounce off walls
+            if (v.y - v.r < 10) { v.y = 10 + v.r; v.vy = Math.abs(v.vy); }
+            if (v.y + v.r > H - 40) { v.y = H - 40 - v.r; v.vy = -Math.abs(v.vy); }
+            // Only collide once fully on screen
+            if (v.x < W - 20) {
+                const dvx = bird.x - v.x, dvy = bird.y - v.y;
+                if (Math.sqrt(dvx*dvx+dvy*dvy) < bird.r + v.r - 6) { die(); return; }
+            }
+            if (v.x + v.r < 0) viruses.splice(i, 1);
+        }
+
+        // Collision with pipes
+        for (const p of pipes) {
+            if (!p.gap) continue; // skip malformed pipes
+            // Horizontal overlap check
+            if (bird.x + 8 > p.x && bird.x - 8 < p.x + PIPE_W) {
+                // Vertical: only die if actually hitting pipe, not just the gap
+                const inTopPipe = bird.y - 8 < p.topH;
+                const inBotPipe = bird.y + 8 > p.topH + p.gap;
+                if (inTopPipe || inBotPipe) {
+                    die(); return;
+                }
+            }
+        }
+
+        // Floor / ceiling
+        if (bird.y + bird.r > H - 30 || bird.y - bird.r < 0) { die(); return; }
+
+        updateUI();
+    }
+
+    function die() {
+        gameState = 'dead';
+        // Enable claim if milestones reached and logged in
+        if (milestonesReached.length > 0 && sessionId) {
+            document.getElementById('claim-btn').disabled = false;
+            document.getElementById('claim-btn').textContent = `Claim ${getTotalCC()} CC + ${ccCoins} Coin CC`;
+        } else if (!sessionId && milestonesReached.length > 0) {
+            document.getElementById('claim-btn').textContent = 'Login to Claim';
+            document.getElementById('login-hint').style.display = 'block';
+        }
+    }
+
+    function getTotalCC() {
+        let total = 0;
+        milestonesReached.forEach(id => {
+            const m = MILESTONES.find(m => m.id === id);
+            if (m) total += m.cc;
+        });
+        const mult = isPaid ? 2 : 1;
+        return (total + ccCoins * 10) * mult;
+    }
+
+    document.getElementById('claim-btn').addEventListener('click', async () => {
+        if (!sessionId) { window.location.href = 'login.html'; return; }
+        if (milestonesReached.length === 0 && ccCoins === 0) return;
+
+        const btn = document.getElementById('claim-btn');
+        btn.disabled = true; btn.textContent = 'Claiming...';
+
+        try {
+            const earned = getTotalCC();
+            const mult = isPaid ? 2 : 1;
+            if (mult > 1) showToast('2× multiplier applied (paid user)!', 'success');
+
+            // Award CC
+            const newBal = userBalance + earned;
+            await kaSetVar(sessionId, 'cc_balance', newBal.toString());
+            userBalance = newBal;
+
+            // Log
+            const txVar = await kaGetVar(sessionId, 'cc_log');
+            let txArr = []; try { txArr = JSON.parse(txVar.response||'[]'); } catch(e){}
+            txArr.push({ desc: `Flappy CC — Score ${score}`, amount: earned, date: new Date().toLocaleString() });
+            if(txArr.length>20) txArr = txArr.slice(-20);
+            await kaSetVar(sessionId, 'cc_log', JSON.stringify(txArr));
+
+            // 1-day key milestone
+            const keyMilestone = milestonesReached.includes('ms-100');
+            if (keyMilestone) {
+                showToast('🏆 1-Day Key milestone reached! Open a Discord ticket to claim your key.', 'gold');
+                await kaSetVar(sessionId, 'flappy_key_pending', '1');
+            }
+
+            showToast(`+${earned} CC claimed! New balance: ${newBal.toLocaleString()} CC`, 'success');
+            document.getElementById('claim-status').textContent = `+${earned} CC added to your wallet!`;
+            btn.textContent = 'Claimed!';
+            milestonesReached = [];
+            ccCoins = 0;
+        } catch(e) {
+            showToast('Failed to claim. Try again.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Claim Rewards';
+        }
+    });
+
+    // Scrolling hex data streams
+    const hexStreams = Array.from({length: 8}, (_, i) => ({
+        x: (i / 8) * W + 20, y: Math.random() * H, speed: 0.4 + Math.random() * 0.6,
+        chars: Array.from({length: 12}, () => Math.floor(Math.random()*256).toString(16).padStart(2,'0'))
+    }));
+
+    // Animated circuit nodes
+    const circuitNodes = [
+        {x:60,y:80},{x:180,y:50},{x:320,y:90},{x:460,y:60},{x:550,y:100},
+        {x:40,y:200},{x:150,y:240},{x:280,y:190},{x:420,y:230},{x:530,y:210},
+        {x:80,y:340},{x:220,y:380},{x:360,y:320},{x:480,y:370},{x:570,y:340},
+        {x:50,y:460},{x:190,y:500},{x:330,y:470},{x:460,y:510},{x:560,y:480},
+    ];
+    const circuitEdges = [
+        [0,1],[1,2],[2,3],[3,4],[5,6],[6,7],[7,8],[8,9],
+        [10,11],[11,12],[12,13],[13,14],[0,5],[2,7],[4,9],[5,10],[7,12],[9,14],
+        [10,15],[11,16],[12,17],[13,18],[14,19],[15,16],[16,17],[17,18],[18,19],
+    ];
+
+    function drawBackground() {
+        bgFrame++;
+
+        // Deep dark base with subtle gradient
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, '#010508');
+        grad.addColorStop(0.5, '#020a05');
+        grad.addColorStop(1, '#010306');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, W, H);
+
+        // === CIRCUIT BOARD ===
+        ctx.save();
+        // Edges (wires)
+        for (const [a,b] of circuitEdges) {
+            const na = circuitNodes[a], nb = circuitNodes[b];
+            const pulse = (Math.sin(bgFrame * 0.03 + a * 0.7) + 1) * 0.5;
+            ctx.strokeStyle = `rgba(0,${100+Math.floor(pulse*80)},${40+Math.floor(pulse*30)},${0.06+pulse*0.04})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(na.x, na.y); ctx.lineTo(nb.x, nb.y); ctx.stroke();
+        }
+        // Nodes (glowing dots)
+        for (let i = 0; i < circuitNodes.length; i++) {
+            const n = circuitNodes[i];
+            const pulse = (Math.sin(bgFrame * 0.04 + i * 1.1) + 1) * 0.5;
+            const r = 3 + pulse * 2;
+            ctx.shadowColor = '#00ff65';
+            ctx.shadowBlur = 8 + pulse * 6;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, r, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(0,255,100,${0.15 + pulse * 0.25})`;
+            ctx.fill();
+            // Inner bright dot
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, 1.5, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(100,255,150,${0.5 + pulse * 0.4})`;
+            ctx.fill();
+        }
+        ctx.shadowBlur = 0;
+        ctx.restore();
+
+        // === HEX DATA STREAMS ===
+        ctx.save();
+        ctx.font = '10px monospace';
+        for (const s of hexStreams) {
+            s.y += s.speed;
+            if (s.y > H + 120) { s.y = -20; s.x = Math.random() * W; }
+            // Randomize one char occasionally
+            if (Math.random() < 0.02) s.chars[Math.floor(Math.random()*s.chars.length)] = Math.floor(Math.random()*256).toString(16).padStart(2,'0');
+            for (let j = 0; j < s.chars.length; j++) {
+                const cy = s.y - j * 13;
+                if (cy < 0 || cy > H) continue;
+                const alpha = Math.max(0, 0.18 - j * 0.015);
+                ctx.fillStyle = j === 0 ? `rgba(50,255,120,${alpha+0.12})` : `rgba(0,180,60,${alpha})`;
+                ctx.fillText(s.chars[j], s.x, cy);
+            }
+        }
+        ctx.restore();
+
+        // === MATRIX RAIN (faint) ===
+        ctx.save();
+        ctx.font = '11px monospace';
+        for (let i = 0; i < matrixCols; i++) {
+            const drop = matrixDrops[i];
+            const y = drop * 14;
+            if (y > 0 && y < H + 14) {
+                const alpha = 0.08 + Math.sin(bgFrame * 0.04 + i) * 0.02;
+                ctx.fillStyle = `rgba(0,255,65,${alpha})`;
+                const ch = matrixChars[Math.floor((bgFrame + i * 7) % matrixChars.length)];
+                ctx.fillText(ch, i * 12 + 1, y);
+            }
+            matrixDrops[i] += 0.18;
+            if (matrixDrops[i] * 14 > H && Math.random() > 0.985) matrixDrops[i] = Math.random() * -20;
+        }
+        ctx.restore();
+
+        // === SCAN LINE EFFECT ===
+        const scanY = (bgFrame * 2) % (H + 20) - 10;
+        ctx.fillStyle = 'rgba(0,255,80,0.03)';
+        ctx.fillRect(0, scanY, W, 3);
+    }
+
+    function drawVirus(v) {
+        ctx.save();
+        ctx.translate(v.x, v.y);
+        ctx.rotate(v.angle);
+        // Glow
+        ctx.shadowColor = '#ff0040';
+        ctx.shadowBlur = 18;
+        // Spiky virus body
+        ctx.beginPath();
+        const spikes = 8;
+        for (let i = 0; i < spikes * 2; i++) {
+            const a = (i / (spikes * 2)) * Math.PI * 2;
+            const r = i % 2 === 0 ? v.r : v.r * 0.55;
+            ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,0,60,0.85)';
+        ctx.fill();
+        ctx.strokeStyle = '#ff4488';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        // Inner circle
+        ctx.beginPath();
+        ctx.arc(0, 0, v.r * 0.38, 0, Math.PI * 2);
+        ctx.fillStyle = '#ff0040';
+        ctx.fill();
+        // "!" warning
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('!', 0, 0);
+        ctx.restore();
+    }
+
+    function drawGround() {
+        ctx.fillStyle = COLORS.ground;
+        ctx.fillRect(0, H - 30, W, 30);
+        // Neon green ground line
+        ctx.fillStyle = 'rgba(0,255,65,0.6)';
+        ctx.fillRect(0, H - 30, W, 1);
+        // Ground scan-line text
+        ctx.font = '9px monospace';
+        ctx.fillStyle = 'rgba(0,255,65,0.25)';
+        ctx.textAlign = 'left';
+        for (let i = 0; i < 18; i++) {
+            ctx.fillText(matrixChars[(bgFrame + i*3) % matrixChars.length], i * 30 + 2, H - 12);
+        }
+        ctx.textAlign = 'left';
+    }
+
+    function drawOverlay() {
+        if (gameState === 'idle') {
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 28px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('Flappy CC', W/2, H/2 - 40);
+            ctx.font = '16px Inter';
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.fillText('Press Space or Tap to Start', W/2, H/2 + 10);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText('⬡ Collect CC Coins for bonus!', W/2, H/2 + 40);
+        }
+        if (gameState === 'dead') {
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 32px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText('Game Over', W/2, H/2 - 50);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 22px Inter';
+            ctx.fillText(`Score: ${score}`, W/2, H/2 - 10);
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = '18px Inter';
+            ctx.fillText(`CC Coins: ${ccCoins}  (+${ccCoins*10} CC)`, W/2, H/2 + 25);
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = '14px Inter';
+            ctx.fillText('Tap / Space to restart', W/2, H/2 + 60);
+            if (getTotalCC() > 0) {
+                ctx.fillStyle = '#10b981';
+                ctx.font = 'bold 16px Inter';
+                ctx.fillText(`Total CC Earned: ${getTotalCC()}${isPaid?' (2×)':''}`, W/2, H/2 + 90);
+            }
+        }
+        ctx.textAlign = 'left';
+    }
+
+    function draw() {
+        drawBackground();
+        pipes.forEach(drawPipe);
+        coins.forEach(drawCoin);
+        viruses.forEach(drawVirus);
+        drawGround();
+        drawBird();
+
+        // HACKED flash overlay
+        if (hackedFlash > 0) {
+            const alpha = Math.min(hackedFlash / 40, 1) * 0.55;
+            ctx.fillStyle = `rgba(0,255,65,${alpha})`;
+            ctx.fillRect(0, 0, W, H);
+            ctx.save();
+            ctx.font = 'bold 52px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = `rgba(0,20,0,${Math.min(hackedFlash/40,1)})`;
+            ctx.shadowColor = '#00ff41';
+            ctx.shadowBlur = 30;
+            ctx.fillText('HACKED', W/2, H/2);
+            ctx.shadowBlur = 0;
+            ctx.restore();
+            hackedFlash--;
+        }
+
+        // HUD score
+        if (gameState === 'running') {
+            ctx.fillStyle = 'rgba(255,255,255,0.9)';
+            ctx.font = 'bold 32px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(score, W/2, 50);
+            ctx.font = '14px Inter';
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText(`⬡ ${ccCoins}`, W/2, 74);
+            // Speed indicator
+            const spd = getPipeSpeed();
+            const lvl = spd < 2.5 ? 'EASY' : spd < 3.5 ? 'MEDIUM' : spd < 4.5 ? 'HARD' : 'INSANE';
+            const lvlCol = spd < 2.5 ? '#10b981' : spd < 3.5 ? '#fbbf24' : spd < 4.5 ? '#f97316' : '#ef4444';
+            ctx.fillStyle = lvlCol;
+            ctx.font = 'bold 11px monospace';
+            ctx.fillText(lvl, W/2, 92);
+            ctx.textAlign = 'left';
+        }
+        drawOverlay();
+    }
+
+    function loop() {
+        try { update(); } catch(e) { console.error('update error:', e); }
+        try { draw(); } catch(e) { console.error('draw error:', e); }
+        raf = requestAnimationFrame(loop);
+    }
+
+    resetGame();
+    initAuth();
+    loop();
+    </script>
+</body>
+</html>

@@ -293,6 +293,65 @@
         .loader-icon { display: none; animation: spin 1s linear infinite; margin-left: 8px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
+        /* Challenges */
+        .challenge-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .challenge-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.9rem 1.1rem;
+            background: rgba(0,0,0,0.22);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+        .challenge-item.done {
+            border-color: rgba(16,185,129,0.25);
+            background: rgba(16,185,129,0.04);
+        }
+        .challenge-left { display: flex; flex-direction: column; gap: 0.2rem; flex: 1; }
+        .challenge-title { font-size: 0.9rem; font-weight: 600; color: white; }
+        .challenge-desc { font-size: 0.78rem; color: var(--text-muted); }
+        .challenge-reward {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #10b981;
+            white-space: nowrap;
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.2);
+            padding: 0.2rem 0.6rem;
+            border-radius: 5px;
+        }
+        .challenge-btn {
+            padding: 0.45rem 1rem;
+            border-radius: 7px;
+            border: 1px solid rgba(79,70,229,0.35);
+            background: rgba(79,70,229,0.12);
+            color: #818cf8;
+            font-family: var(--font-sans);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .challenge-btn:hover { background: rgba(79,70,229,0.22); color: white; }
+        .challenge-btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+        .challenge-btn.claimed {
+            border-color: rgba(16,185,129,0.3);
+            background: rgba(16,185,129,0.08);
+            color: #10b981;
+            cursor: default;
+        }
+
         /* Reseller apply */
         .reseller-banner {
             background: linear-gradient(135deg, rgba(236,72,153,0.08), rgba(139,92,246,0.08));
@@ -355,6 +414,7 @@
                 <a href="status.html">Status</a>
                 <a href="configs.html">Configs</a>
                 <a href="store.html">Store</a>
+                <a href="flappy.html">Flappy CC</a>
             </nav>
             <div class="nav-actions">
                 <a href="login.html" class="btn-secondary desktop-only">Portal</a>
@@ -449,6 +509,41 @@
                 <div id="tx-list" class="tx-list">
                     <div class="empty-tx">Loading transactions...</div>
                 </div>
+            </div>
+
+            <!-- Free CC Challenges -->
+            <div class="wallet-section" data-aos="fade-up" id="challenges-section">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    Free CC Challenges
+                </h3>
+                <div class="challenge-list" id="challenge-list">
+                    <div class="challenge-item" id="ch-share">
+                        <div class="challenge-left">
+                            <span class="challenge-title">Share a Config</span>
+                            <span class="challenge-desc">Upload a config to the community via the Configs page</span>
+                        </div>
+                        <span class="challenge-reward">+50 CC</span>
+                        <button class="challenge-btn" id="ch-share-btn" onclick="claimShareChallenge()">Claim</button>
+                    </div>
+                    <div class="challenge-item" id="ch-daily">
+                        <div class="challenge-left">
+                            <span class="challenge-title">Daily Login</span>
+                            <span class="challenge-desc">Log in once per day to earn CC</span>
+                        </div>
+                        <span class="challenge-reward">+10 CC</span>
+                        <button class="challenge-btn" id="ch-daily-btn" onclick="claimDailyLogin()">Claim</button>
+                    </div>
+                    <div class="challenge-item" id="ch-refer">
+                        <div class="challenge-left">
+                            <span class="challenge-title">Refer a Friend</span>
+                            <span class="challenge-desc">Get a friend to join Column — open a Discord ticket to claim</span>
+                        </div>
+                        <span class="challenge-reward">+100 CC</span>
+                        <a href="https://discord.gg/column" target="_blank" rel="noopener" class="challenge-btn" style="text-decoration:none; display:inline-block; text-align:center;">Discord Ticket</a>
+                    </div>
+                </div>
+                <div class="status-msg" id="challenges-status" style="margin-top:0.75rem;"></div>
             </div>
 
             <!-- Reseller Apply -->
@@ -628,6 +723,8 @@
                     try { txArray = JSON.parse(txVar.response); } catch(e) {}
                 }
                 renderTransactions(txArray);
+                // Load challenge states
+                await loadChallengeStates();
             } catch(e) {
                 document.getElementById('cc-balance-display').textContent = 'Error';
             }
@@ -691,7 +788,110 @@
         window.openBuyModal = openBuyModal;
         window.closeBuyModal = closeBuyModal;
 
-        // Init
+        // ─── Challenges ───────────────────────────────────────────────
+
+        async function loadChallengeStates() {
+            // Share challenge
+            const shareVar = await keyAuthGetVar(currentSessionId, 'cc_share_done');
+            if (shareVar.success && shareVar.response === '1') {
+                markChallengeDone('ch-share', 'ch-share-btn');
+            }
+
+            // Daily login
+            const dailyVar = await keyAuthGetVar(currentSessionId, 'cc_daily_last');
+            if (dailyVar.success && dailyVar.response) {
+                const lastMs = parseInt(dailyVar.response) || 0;
+                const elapsed = Date.now() - lastMs;
+                if (elapsed < 86400000) {
+                    // Less than 24h — already claimed today
+                    const hoursLeft = Math.ceil((86400000 - elapsed) / 3600000);
+                    const btn = document.getElementById('ch-daily-btn');
+                    if (btn) { btn.textContent = `${hoursLeft}h left`; btn.disabled = true; }
+                    document.getElementById('ch-daily').classList.add('done');
+                }
+            }
+        }
+
+        function markChallengeDone(itemId, btnId) {
+            const item = document.getElementById(itemId);
+            const btn  = document.getElementById(btnId);
+            if (item) item.classList.add('done');
+            if (btn)  { btn.textContent = 'Claimed'; btn.classList.add('claimed'); btn.disabled = true; }
+        }
+
+        async function claimShareChallenge() {
+            const btn = document.getElementById('ch-share-btn');
+            if (!btn || btn.disabled) return;
+            btn.disabled = true;
+            btn.textContent = 'Checking...';
+
+            // Verify the var exists (set by upload flow or manually by user/staff)
+            const shareVar = await keyAuthGetVar(currentSessionId, 'cc_share_done');
+            if (!shareVar.success || shareVar.response !== '1') {
+                showStatus('challenges-status', 'Challenge not verified yet. Upload a config on the Configs page first.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Claim';
+                return;
+            }
+
+            // Award CC
+            const reward = 50;
+            const newBalance = currentBalance + reward;
+            const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBalance.toString());
+            if (!res.success) {
+                showStatus('challenges-status', 'Failed to award CC: ' + (res.message || 'Unknown error'), 'error');
+                btn.disabled = false;
+                btn.textContent = 'Claim';
+                return;
+            }
+            updateBalanceDisplay(newBalance);
+            await addTransaction('Challenge: Share a Config', reward);
+            // Mark as paid out so it can't be re-claimed
+            await keyAuthSetVar(currentSessionId, 'cc_share_done', 'paid');
+            markChallengeDone('ch-share', 'ch-share-btn');
+            showStatus('challenges-status', '+50 CC awarded for sharing a config!', 'success');
+        }
+
+        async function claimDailyLogin() {
+            const btn = document.getElementById('ch-daily-btn');
+            if (!btn || btn.disabled) return;
+            btn.disabled = true;
+            btn.textContent = 'Claiming...';
+
+            // Check last claim time
+            const dailyVar = await keyAuthGetVar(currentSessionId, 'cc_daily_last');
+            if (dailyVar.success && dailyVar.response) {
+                const lastMs = parseInt(dailyVar.response) || 0;
+                if (Date.now() - lastMs < 86400000) {
+                    const hoursLeft = Math.ceil((86400000 - (Date.now() - lastMs)) / 3600000);
+                    showStatus('challenges-status', `Daily login already claimed. Come back in ${hoursLeft}h.`, 'error');
+                    btn.textContent = `${hoursLeft}h left`;
+                    document.getElementById('ch-daily').classList.add('done');
+                    return;
+                }
+            }
+
+            // Award CC
+            const reward = 10;
+            const newBalance = currentBalance + reward;
+            const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBalance.toString());
+            if (!res.success) {
+                showStatus('challenges-status', 'Failed to award CC: ' + (res.message || 'Unknown error'), 'error');
+                btn.disabled = false;
+                btn.textContent = 'Claim';
+                return;
+            }
+            updateBalanceDisplay(newBalance);
+            await addTransaction('Challenge: Daily Login', reward);
+            await keyAuthSetVar(currentSessionId, 'cc_daily_last', Date.now().toString());
+            markChallengeDone('ch-daily', 'ch-daily-btn');
+            showStatus('challenges-status', '+10 CC awarded for daily login!', 'success');
+        }
+
+        window.claimShareChallenge = claimShareChallenge;
+        window.claimDailyLogin = claimDailyLogin;
+
+        // ─── Init ─────────────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', initWallet);
     </script>
 
