@@ -289,9 +289,9 @@
         // ── Store catalogue ──────────────────────────────────────────
         const STORE = {
             subs: [
-                { id: 'sub_1d', name: '1 Day Access', icon: '⚡', desc: 'Full access to Column for 24 hours. For trying it out.', price: 500, usd: 3, tier: 'common' },
-                { id: 'sub_1m', name: '1 Month Sub', icon: '📅', desc: 'Full access to Column for 30 days. Save up — this is not cheap.', price: 8000, usd: 12, tier: 'epic' },
-                { id: 'sub_3m', name: '3 Month Sub', icon: '🏆', desc: 'Full access to Column for 90 days. Extremely rare reward.', price: 20000, usd: 25, tier: 'legendary' },
+                { id: 'sub_1d', name: '1 Day Access', icon: '⚡', desc: 'Full access to Column for 24 hours. For trying it out.', price: 500, tier: 'common' },
+                { id: 'sub_1m', name: '1 Month Sub', icon: '📅', desc: 'Full access to Column for 30 days. Save up — this is not cheap.', price: 8000, tier: 'epic' },
+                { id: 'sub_3m', name: '3 Month Sub', icon: '🏆', desc: 'Full access to Column for 90 days. Extremely rare reward.', price: 20000, tier: 'legendary' },
             ],
             perks: [
                 { id: 'extra_hwid', name: 'Extra HWID Slot', icon: '💻', desc: 'Unlock a second device on your license permanently.', price: 5000, tier: 'epic' },
@@ -449,73 +449,9 @@
             } catch(e) { showToast('Failed to load store: ' + e.message, 'error'); }
         }
 
-        // ── Crypto checkout (real money → KeyAuth key + Discord role) ──────────
-        // After Discord OAuth the backend redirects to store.html#dc=<ref>.
-        // We stash that ref so checkout can link the payment to the buyer's Discord.
-        function getDiscordRef() {
-            const m = location.hash.match(/dc=([A-Za-z0-9]+)/);
-            if (m) localStorage.setItem('discord_ref', m[1]);
-            return localStorage.getItem('discord_ref');
-        }
-
-        async function buyCrypto(itemId) {
-            const item = STORE.subs.find(i => i.id === itemId);
-            if (!item || !item.usd) return;
-
-            const ref = getDiscordRef();
-            if (!ref) {
-                // Need a Discord identity first so we can auto-assign the role.
-                showToast('Connect Discord first so we can give you the role…', 'info');
-                setTimeout(() => { location.href = BACKEND.discordLoginUrl(); }, 900);
-                return;
-            }
-
-            try {
-                showToast('Creating your crypto invoice…', 'info');
-                const { orderId, invoiceUrl } = await BACKEND.checkout({
-                    itemId: item.id, itemName: item.name, priceUsd: item.usd, discordRef: ref
-                });
-                localStorage.setItem('pending_order', orderId);
-                window.open(invoiceUrl, '_blank');
-                pollOrder(orderId);
-            } catch (e) {
-                showToast('Could not start checkout: ' + e.message, 'error');
-            }
-        }
-
-        // Poll until the backend marks the order delivered, then show the key.
-        async function pollOrder(orderId) {
-            let tries = 0;
-            const timer = setInterval(async () => {
-                tries++;
-                const o = await BACKEND.getOrder(orderId);
-                if (o && o.status === 'delivered') {
-                    clearInterval(timer);
-                    localStorage.removeItem('pending_order');
-                    showToast('Payment confirmed! Key + role delivered. Check your Discord DMs.', 'success');
-                    if (o.key) {
-                        document.getElementById('modal-title').textContent = '🎉 Your License Key';
-                        document.getElementById('modal-desc').innerHTML =
-                            `Payment confirmed for <strong>${escHtml(o.itemName)}</strong>.<br><br>` +
-                            `<code style="display:block;background:#11141a;border:1px solid var(--card-border);padding:0.75rem;border-radius:8px;color:#2ecc71;word-break:break-all;">${escHtml(o.key)}</code><br>` +
-                            `Your Discord role has been added and the key was DM'd to you.`;
-                        document.getElementById('buy-modal').classList.add('open');
-                    }
-                }
-                if (tries > 120) clearInterval(timer); // stop after ~20 min
-            }, 10000);
-        }
-
-        // Resume polling if the buyer returned to the page mid-payment.
-        (function resumePending() {
-            const pid = new URLSearchParams(location.search).get('paid') || localStorage.getItem('pending_order');
-            if (pid) pollOrder(pid);
-        })();
-
-        window.buyCrypto = buyCrypto;
         window.startBuy = startBuy;
         window.closeBuyModal = closeBuyModal;
-        window.addEventListener('DOMContentLoaded', () => { getDiscordRef(); initStore(); });
+        window.addEventListener('DOMContentLoaded', initStore);
     </script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>AOS.init({ once: true, duration: 800 });</script>
