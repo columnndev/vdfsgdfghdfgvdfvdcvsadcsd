@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="style.css">
     <script src="security.js"></script>
     <script src="config-api.js"></script>
+    <script src="backend.js"></script>
     <style>
         .configs-container {
             min-height: 100vh;
@@ -226,6 +227,111 @@
         }
         .store-hint a { color: #818cf8; text-decoration: none; }
         .store-hint a:hover { text-decoration: underline; }
+
+        /* Upload / Claim section */
+        .upload-section {
+            background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+        }
+        .upload-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: white;
+        }
+        .upload-section .section-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+            line-height: 1.5;
+        }
+        .upload-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.85rem 1rem;
+        }
+        @media (max-width: 560px) { .upload-form-grid { grid-template-columns: 1fr; } }
+        .upload-form-grid .full-width { grid-column: 1 / -1; }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .form-group label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .form-input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.75rem 0.9rem;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+        }
+        .form-input:focus { border-color: var(--accent-primary); }
+        .form-input::placeholder { color: #3a4455; }
+        .form-input.monospace { font-family: monospace; letter-spacing: 1px; font-size: 0.95rem; }
+        .upload-status {
+            font-size: 0.85rem;
+            padding: 0.65rem 0.9rem;
+            border-radius: 7px;
+            margin-top: 0.75rem;
+            display: none;
+            line-height: 1.5;
+        }
+        .upload-status.success {
+            background: rgba(16,185,129,0.08);
+            border: 1px solid rgba(16,185,129,0.2);
+            color: #10b981;
+        }
+        .upload-status.error {
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: #ef4444;
+        }
+        .upload-status.info {
+            background: rgba(79,70,229,0.08);
+            border: 1px solid rgba(79,70,229,0.2);
+            color: #818cf8;
+        }
+        .price-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .upload-collapse-toggle {
+            background: none;
+            border: 1px solid rgba(79,70,229,0.25);
+            color: #818cf8;
+            padding: 0.45rem 1rem;
+            border-radius: 7px;
+            font-family: var(--font-sans);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1.1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .upload-collapse-toggle:hover { background: rgba(79,70,229,0.1); color: white; }
+        .upload-form-body { display: none; }
+        .upload-form-body.open { display: block; }
     </style>
 </head>
 <body>
@@ -274,19 +380,52 @@
         <!-- Main content — shown when logged in -->
         <div id="configs-content" style="display:none;">
 
-            <!-- Store hint -->
-            <div class="store-hint" data-aos="fade-up">
-                <svg viewBox="0 0 24 24" width="18" height="18" stroke="#818cf8" stroke-width="2" fill="none"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-                Configs with a price tag require Column Coins (CC). Visit the <a href="store.html">Config Store</a> to browse and buy, or <a href="wallet.html">Wallet</a> to manage your CC.
-                To set a price on your config, add a <code style="background:rgba(255,255,255,0.08); padding:0.1rem 0.4rem; border-radius:3px; font-size:0.8rem;">"price": 100</code> field to your config JSON file.
+            <!-- Upload / Claim Config -->
+            <div class="upload-section" data-aos="fade-up" id="upload-section">
+                <h3>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Claim &amp; Upload Your Config
+                </h3>
+                <p class="section-desc">
+                    Share your config from in-game (Settings &#x2192; Share Config &#x2192; Copy Code), paste the code below, and fill in the details. We'll publish it to the community under your username.
+                </p>
+                <button class="upload-collapse-toggle" onclick="toggleUploadForm()" id="upload-toggle">
+                    <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg>
+                    Show Upload Form
+                </button>
+                <div class="upload-form-body" id="upload-form-body">
+                    <div class="upload-form-grid">
+                        <div class="form-group full-width">
+                            <label for="uf-code">Config Code (from in-game share)</label>
+                            <input type="text" id="uf-code" class="form-input monospace" placeholder="COL-XXXX" maxlength="8" autocomplete="off" spellcheck="false">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="uf-desc">Description</label>
+                            <input type="text" id="uf-desc" class="form-input" placeholder="e.g. High sens Tracer config with max smoothing" maxlength="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="uf-hero">Hero Name</label>
+                            <input type="text" id="uf-hero" class="form-input" placeholder="e.g. Tracer" maxlength="32">
+                        </div>
+                        <div class="form-group">
+                            <label for="uf-price">Price (CC)</label>
+                            <input type="number" id="uf-price" class="form-input" placeholder="0" min="0" value="0">
+                            <span class="price-hint">0 = free for everyone</span>
+                        </div>
+                    </div>
+                    <button class="btn-primary" style="margin-top:1rem; width:100%;" onclick="submitConfigClaim()" id="upload-submit-btn">
+                        Publish Config
+                    </button>
+                    <div class="upload-status" id="upload-status"></div>
+                </div>
             </div>
 
-            <!-- Load by code -->
-            <div class="load-code-bar" data-aos="fade-up">
-                <span>Load code:</span>
-                <input type="text" id="load-code-input" placeholder="COL-XXXX" maxlength="8" autocomplete="off" spellcheck="false">
-                <button id="load-code-btn" class="btn-secondary" style="white-space:nowrap; padding: 0.5rem 1rem;">Copy</button>
+            <!-- Store hint -->
+            <div class="store-hint" data-aos="fade-up">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="#818cf8" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Paid configs require Column Coins (CC). Visit your <a href="wallet.html">Wallet</a> to get CC and claim daily rewards.
             </div>
+
 
             <!-- Filter bar -->
             <div class="filter-bar" data-aos="fade-up">
@@ -323,8 +462,12 @@
             setInterval(drawRain, 35);
         }
 
+        // Owner key — same key used across all pages
+        const OWNER_KEY = 'owner-8ivWfL-DGBLsO';
+
         // Check if logged in via saved license
         const savedKey = localStorage.getItem('saved_license');
+        const isAdmin = savedKey === OWNER_KEY;
         const authGate      = document.getElementById('auth-gate');
         const configsContent = document.getElementById('configs-content');
         const configGrid    = document.getElementById('config-grid');
@@ -366,8 +509,8 @@
                 const priceBadge = isFree
                     ? `<span class="price-tag free">FREE</span>`
                     : `<span class="price-tag paid">${price} CC</span>`;
-                const storeLink = !isFree
-                    ? `<a href="store.html" style="display:block; text-align:center; margin-top:6px; font-size:0.8rem; color:#f472b6; text-decoration:none; opacity:0.8;">Buy in Store &#x2192;</a>`
+                const adminBtn = isAdmin
+                    ? `<button onclick="adminDeleteConfig('${c.code}')" style="margin-top:6px;width:100%;padding:0.4rem;background:rgba(255,45,85,0.1);border:1px solid rgba(255,45,85,0.3);color:#ff2d55;border-radius:6px;cursor:pointer;font-size:0.8rem;">&#x1F5D1; Delete (Admin)</button>`
                     : '';
                 return `
                 <div class="config-card">
@@ -386,9 +529,9 @@
                     </div>
                     ${isFree
                         ? `<button class="copy-code-btn" onclick="copyCode(this, '${c.code}')" style="margin-top:8px; font-size:1rem; font-weight:700; letter-spacing:2px;">&#x1F4CB; ${c.code}</button>`
-                        : `<button class="copy-code-btn" style="margin-top:8px; opacity:0.5; cursor:not-allowed;" disabled>&#x1F512; Paid Config</button>`
+                        : `<button class="copy-code-btn" onclick="copyCode(this, '${c.code}')" style="margin-top:8px; font-size:1rem; font-weight:700; letter-spacing:2px; background:rgba(244,114,182,0.1); border-color:rgba(244,114,182,0.3); color:#f472b6;">&#x1F4CB; ${c.code} &nbsp;&#x1F512; ${price} CC</button>`
                     }
-                    ${storeLink}
+                    ${adminBtn}
                 </div>`;
             }).join('');
         }
@@ -430,6 +573,136 @@
         });
 
         loadCodeInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadCodeBtn.click(); });
+
+        // ─── Upload / Claim Config ────────────────────────────────────
+
+        const API_URL_KA  = 'https://keyauth.win/api/1.2/';
+        const APP_NAME_KA = 'column ow';
+        const OWNER_ID_KA = 'msmJ8x5So5';
+
+        let uploadSessionId = null;
+        let uploadUsername  = null;
+
+        // Bootstrap KeyAuth session for upload (reuse saved license)
+        async function ensureUploadSession() {
+            if (uploadSessionId && uploadUsername) return true;
+            if (!savedKey) return false;
+            try {
+                const initRes = await fetch(`${API_URL_KA}?type=init&ver=1.0&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                const initData = await initRes.json();
+                if (!initData.success) return false;
+                const sid = initData.sessionid;
+                const loginRes = await fetch(`${API_URL_KA}?type=license&key=${encodeURIComponent(savedKey)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                const loginData = await loginRes.json();
+                if (!loginData.success) return false;
+                uploadSessionId = sid;
+                // Try to get username
+                const uVar = await fetch(`${API_URL_KA}?type=getvar&var=username&sessionid=${sid}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                const uData = await uVar.json();
+                uploadUsername = (uData.success && uData.response) ? uData.response : 'Anonymous';
+                return true;
+            } catch(e) { return false; }
+        }
+
+        function toggleUploadForm() {
+            const body    = document.getElementById('upload-form-body');
+            const toggle  = document.getElementById('upload-toggle');
+            const isOpen  = body.classList.contains('open');
+            body.classList.toggle('open');
+            toggle.innerHTML = isOpen
+                ? `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="6 9 12 15 18 9"/></svg> Show Upload Form`
+                : `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none"><polyline points="18 15 12 9 6 15"/></svg> Hide Upload Form`;
+        }
+
+        function showUploadStatus(msg, type) {
+            const el = document.getElementById('upload-status');
+            el.textContent = msg;
+            el.className = 'upload-status ' + type;
+            el.style.display = 'block';
+        }
+
+        async function submitConfigClaim() {
+            const codeRaw = document.getElementById('uf-code').value.trim().toUpperCase();
+            const desc    = document.getElementById('uf-desc').value.trim();
+            const hero    = document.getElementById('uf-hero').value.trim();
+            const price   = Math.max(0, parseInt(document.getElementById('uf-price').value) || 0);
+
+            // Validate
+            if (!codeRaw) return showUploadStatus('Please enter your config code.', 'error');
+            const code = codeRaw.startsWith('COL-') ? codeRaw : 'COL-' + codeRaw;
+            if (!/^COL-[A-Z0-9]{4}$/.test(code)) return showUploadStatus('Invalid config code format. Expected COL-XXXX.', 'error');
+            if (!desc)    return showUploadStatus('Please enter a description.', 'error');
+            if (!hero)    return showUploadStatus('Please enter the hero name.', 'error');
+
+            const btn = document.getElementById('upload-submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Publishing...';
+            showUploadStatus('Fetching config from GitHub...', 'info');
+
+            try {
+                // Ensure KeyAuth session
+                const authed = await ensureUploadSession();
+                const author = authed ? uploadUsername : 'Anonymous';
+
+                // Upload via backend (verifies your license server-side; no token in page).
+                const putRes = await fetch(`${BACKEND.url}/config/upload`, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({
+                        licenseKey: localStorage.getItem('saved_license'),
+                        code, label: desc, hero, price, author
+                    })
+                });
+
+                if (!putRes.ok) {
+                    const errJson = await putRes.json().catch(() => ({}));
+                    showUploadStatus('Upload failed: ' + (errJson.error || putRes.status), 'error');
+                    return;
+                }
+
+                // 4. Mark share challenge var in KeyAuth (if authed)
+                if (authed && uploadSessionId) {
+                    const shareVar = await fetch(`${API_URL_KA}?type=getvar&var=cc_share_done&sessionid=${uploadSessionId}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                    const shareData = await shareVar.json();
+                    if (!shareData.success || !shareData.response) {
+                        await fetch(`${API_URL_KA}?type=setvar&var=cc_share_done&data=1&sessionid=${uploadSessionId}&name=${encodeURIComponent(APP_NAME_KA)}&ownerid=${OWNER_ID_KA}`);
+                    }
+                }
+
+                showUploadStatus(`Config ${code} published successfully! It will appear in the browser shortly.`, 'success');
+                // Clear form
+                document.getElementById('uf-code').value = '';
+                document.getElementById('uf-desc').value = '';
+                document.getElementById('uf-hero').value = '';
+                document.getElementById('uf-price').value = '0';
+                // Reload configs
+                setTimeout(loadConfigs, 3000);
+
+            } catch(e) {
+                showUploadStatus('Error: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Publish Config';
+            }
+        }
+
+        window.toggleUploadForm = toggleUploadForm;
+        window.submitConfigClaim = submitConfigClaim;
+
+        // ── Admin: delete config ──────────────────────────────────────
+        async function adminDeleteConfig(code) {
+            if (!isAdmin) return;
+            if (!confirm(`Delete config ${code}?`)) return;
+            // Owner-gated delete via backend (no token in page).
+            const del = await fetch(`${BACKEND.url}/config/delete`, {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ licenseKey: localStorage.getItem('saved_license'), code })
+            });
+            if (del.ok) { alert(`${code} deleted`); loadConfigs(); }
+            else { alert('Delete failed'); }
+        }
+        window.adminDeleteConfig = adminDeleteConfig;
     </script>
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>

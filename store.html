@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Column - Config Store</title>
-    <meta property="og:title" content="Column | Config Store">
-    <meta property="og:description" content="Browse and purchase premium community configs using Column Coins.">
+    <title>Column - CC Store</title>
+    <meta property="og:title" content="Column | CC Store">
+    <meta property="og:description" content="Spend your Column Coins on exclusive rewards — subs, perks and more.">
     <meta property="og:image" content="https://raw.githubusercontent.com/columnndev/column/main/logo.png">
     <meta name="theme-color" content="#4f46e5">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +14,7 @@
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="security.js"></script>
-    <script src="config-api.js"></script>
+    <script src="backend.js"></script>
     <style>
         .store-container {
             min-height: 100vh;
@@ -24,354 +24,135 @@
             position: relative;
             z-index: 10;
         }
-
-        .store-header {
-            text-align: center;
-            margin-bottom: 2.5rem;
-        }
+        .store-header { text-align: center; margin-bottom: 2.5rem; }
         .store-header h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
         .store-header p { color: var(--text-muted); font-size: 1rem; }
 
-        /* Auth gate */
         #auth-gate {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-            padding: 3rem;
-            background: rgba(15,15,22,0.7);
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            text-align: center;
+            display: flex; flex-direction: column; align-items: center; gap: 1.5rem;
+            padding: 3rem; background: rgba(15,15,22,0.7);
+            border: 1px solid var(--card-border); border-radius: 16px; text-align: center;
         }
         #auth-gate p { color: var(--text-muted); }
 
-        /* Balance bar */
         .balance-bar {
-            background: rgba(79,70,229,0.08);
-            border: 1px solid rgba(79,70,229,0.2);
-            border-radius: 12px;
-            padding: 0.85rem 1.25rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 0.75rem;
+            background: rgba(79,70,229,0.08); border: 1px solid rgba(79,70,229,0.2);
+            border-radius: 12px; padding: 0.85rem 1.25rem;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 2rem; flex-wrap: wrap; gap: 0.75rem;
         }
-        .balance-bar-info {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
+        .balance-bar-info { display: flex; align-items: center; gap: 0.6rem; }
         .balance-bar-info span { color: var(--text-muted); font-size: 0.9rem; }
-        .balance-bar-amount {
-            font-weight: 700;
-            font-size: 1.05rem;
-            color: #818cf8;
-        }
+        .balance-amount { font-weight: 700; font-size: 1.1rem; color: #818cf8; }
         .balance-bar a {
-            font-size: 0.85rem;
-            color: #818cf8;
-            text-decoration: none;
-            border: 1px solid rgba(79,70,229,0.3);
-            padding: 0.35rem 0.9rem;
-            border-radius: 6px;
-            transition: all 0.2s;
+            font-size: 0.85rem; color: #818cf8; text-decoration: none;
+            border: 1px solid rgba(79,70,229,0.3); padding: 0.35rem 0.9rem;
+            border-radius: 6px; transition: all 0.2s;
         }
-        .balance-bar a:hover {
-            background: rgba(79,70,229,0.15);
-            color: white;
+        .balance-bar a:hover { background: rgba(79,70,229,0.15); color: white; }
+
+        .section-title {
+            font-size: 1rem; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 1.5px;
+            margin-bottom: 1rem; margin-top: 2rem;
+            display: flex; align-items: center; gap: 0.6rem;
+        }
+        .section-title::after {
+            content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06);
         }
 
-        /* Filter bar */
-        .filter-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-        }
-        .filter-bar input {
-            flex: 1;
-            min-width: 180px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            font-family: var(--font-sans);
-            font-size: 0.9rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .filter-bar input:focus { border-color: var(--accent-primary); }
-        .filter-bar input::placeholder { color: var(--text-muted); }
-
-        .filter-tab {
-            padding: 0.65rem 1.1rem;
-            border-radius: 8px;
-            border: 1px solid rgba(255,255,255,0.1);
-            background: rgba(0,0,0,0.2);
-            color: var(--text-muted);
-            cursor: pointer;
-            font-family: var(--font-sans);
-            font-size: 0.85rem;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-        .filter-tab:hover, .filter-tab.active {
-            border-color: rgba(79,70,229,0.4);
-            background: rgba(79,70,229,0.1);
-            color: #818cf8;
-        }
-
-        /* Config grid */
-        .config-grid {
+        .items-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 1rem;
+            margin-bottom: 1rem;
         }
 
-        .config-card {
-            background: rgba(15,15,22,0.7);
+        .item-card {
+            background: rgba(15,15,22,0.8);
             border: 1px solid var(--card-border);
-            border-radius: 14px;
-            padding: 1.25rem 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            transition: border-color 0.2s, transform 0.2s;
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex; flex-direction: column; gap: 0.75rem;
+            transition: all 0.2s;
             position: relative;
+            overflow: hidden;
         }
-        .config-card:hover {
-            border-color: rgba(79,70,229,0.5);
-            transform: translateY(-2px);
+        .item-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
         }
-        .config-card.paid-card {
-            border-color: rgba(236,72,153,0.2);
-        }
-        .config-card.paid-card:hover {
-            border-color: rgba(236,72,153,0.4);
-        }
+        .item-card.tier-epic::before { background: linear-gradient(90deg, #7c3aed, #a855f7); }
+        .item-card.tier-legendary::before { background: linear-gradient(90deg, #f59e0b, #ef4444); }
+        .item-card.tier-rare::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+        .item-card.tier-common::before { background: linear-gradient(90deg, #6b7280, #9ca3af); }
+        .item-card:hover { border-color: rgba(79,70,229,0.4); transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
 
-        .config-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
+        .item-icon { font-size: 2.2rem; line-height: 1; }
+        .item-name { font-size: 1.05rem; font-weight: 700; color: white; }
+        .item-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
 
-        .config-code {
-            font-family: monospace;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--accent-primary);
-            letter-spacing: 1px;
+        .item-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.25rem; }
+        .item-price {
+            font-size: 1rem; font-weight: 800; color: #818cf8;
+            display: flex; align-items: center; gap: 0.3rem;
         }
+        .item-price .cc-unit { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
 
-        .config-hero-badge {
-            background: rgba(79,70,229,0.15);
-            border: 1px solid rgba(79,70,229,0.3);
-            color: #818cf8;
-            padding: 0.15rem 0.6rem;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
+        .tier-badge {
+            font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.55rem;
+            border-radius: 999px; text-transform: uppercase; letter-spacing: 0.5px;
         }
+        .tier-epic { background: rgba(124,58,237,0.15); border: 1px solid rgba(124,58,237,0.3); color: #a78bfa; }
+        .tier-legendary { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); color: #fbbf24; }
+        .tier-rare { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #60a5fa; }
+        .tier-common { background: rgba(107,114,128,0.15); border: 1px solid rgba(107,114,128,0.3); color: #9ca3af; }
 
-        .price-badge {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: rgba(236,72,153,0.15);
-            border: 1px solid rgba(236,72,153,0.3);
-            color: #f472b6;
-            padding: 0.2rem 0.6rem;
-            border-radius: 6px;
-            font-size: 0.8rem;
-            font-weight: 700;
-        }
-        .price-badge.free {
-            background: rgba(16,185,129,0.1);
-            border-color: rgba(16,185,129,0.25);
-            color: #10b981;
-        }
-
-        .config-label {
-            font-size: 1rem;
-            font-weight: 600;
-            color: white;
-        }
-
-        .config-meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            display: flex;
-            gap: 1rem;
-        }
-
-        .copy-code-btn, .buy-btn {
-            width: 100%;
-            padding: 0.65rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-family: var(--font-sans);
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            margin-top: 4px;
-        }
-        .copy-code-btn {
-            background: rgba(79,70,229,0.1);
-            border: 1px solid rgba(79,70,229,0.3);
-            color: #818cf8;
-        }
-        .copy-code-btn:hover {
-            background: rgba(79,70,229,0.2);
-            border-color: var(--accent-primary);
-            color: white;
-        }
-        .copy-code-btn.copied {
-            background: rgba(16,185,129,0.1);
-            border-color: rgba(16,185,129,0.4) !important;
-            color: #10b981;
-        }
         .buy-btn {
-            background: linear-gradient(135deg, rgba(236,72,153,0.15), rgba(139,92,246,0.15));
-            border: 1px solid rgba(236,72,153,0.3);
-            color: #f472b6;
+            padding: 0.55rem 1.1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; border: none; font-family: var(--font-sans);
+            background: rgba(79,70,229,0.15); border: 1px solid rgba(79,70,229,0.3); color: #818cf8;
         }
-        .buy-btn:hover {
-            background: linear-gradient(135deg, rgba(236,72,153,0.25), rgba(139,92,246,0.25));
-            border-color: rgba(236,72,153,0.5);
-            color: white;
-        }
-        .buy-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
+        .buy-btn:hover { background: rgba(79,70,229,0.25); color: white; border-color: var(--accent-primary); }
+        .buy-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .buy-btn.owned { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); color: #10b981; cursor: default; }
 
-        .revealed-code {
-            font-family: monospace;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: white;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid rgba(79,70,229,0.3);
-            border-radius: 8px;
-            padding: 0.6rem 1rem;
-            text-align: center;
-            cursor: pointer;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-            margin-top: 4px;
-        }
-        .revealed-code:hover {
-            background: rgba(79,70,229,0.1);
-            border-color: var(--accent-primary);
-        }
-
-        .loading-spinner {
-            display: flex;
-            justify-content: center;
-            padding: 3rem;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: var(--text-muted);
-            grid-column: 1 / -1;
-        }
-
-        /* Confirm modal */
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.7);
-            backdrop-filter: blur(6px);
-            z-index: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.25s;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(8px); z-index: 500;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.25s;
         }
-        .modal-overlay.open {
-            opacity: 1;
-            pointer-events: auto;
-        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
         .modal-box {
-            background: rgba(12,12,18,0.97);
-            border: 1px solid rgba(79,70,229,0.3);
-            border-radius: 20px;
-            padding: 2.5rem;
-            max-width: 420px;
-            width: 90%;
-            transform: translateY(20px);
-            transition: transform 0.25s;
+            background: rgba(10,10,18,0.98); border: 1px solid rgba(79,70,229,0.3);
+            border-radius: 20px; padding: 2.5rem; max-width: 440px; width: 90%;
+            transform: translateY(20px); transition: transform 0.25s;
         }
         .modal-overlay.open .modal-box { transform: translateY(0); }
-        .modal-box h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
+        .modal-box h3 { font-size: 1.25rem; margin-bottom: 0.5rem; }
         .modal-box p { color: var(--text-muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem; }
-        .modal-close {
-            float: right;
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            font-size: 1.4rem;
-            line-height: 1;
-            padding: 0;
-            margin-top: -4px;
-        }
+        .modal-close { float: right; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 0; }
         .modal-close:hover { color: white; }
         .modal-btns { display: flex; gap: 10px; }
 
-        .toast-container {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 9000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .toast {
-            background: rgba(20,20,30,0.97);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-left: 4px solid var(--accent-primary);
-            color: white;
-            padding: 0.9rem 1.25rem;
-            border-radius: 10px;
-            font-size: 0.88rem;
-            font-weight: 500;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-            transform: translateX(120%);
-            transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
-            max-width: 320px;
-        }
+        .toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 9000; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: rgba(20,20,30,0.97); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid var(--accent-primary); color: white; padding: 0.9rem 1.25rem; border-radius: 10px; font-size: 0.88rem; font-weight: 500; box-shadow: 0 8px 24px rgba(0,0,0,0.4); transform: translateX(120%); transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275); max-width: 320px; }
         .toast.show { transform: translateX(0); }
         .toast.error { border-left-color: #ef4444; }
         .toast.success { border-left-color: #10b981; }
+
+        .notice-box {
+            background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 10px; padding: 0.9rem 1.2rem; margin-bottom: 1.5rem;
+            font-size: 0.85rem; color: #fbbf24; line-height: 1.5;
+        }
     </style>
 </head>
 <body>
-    <!-- Preloader -->
     <div id="secure-preloader" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#050508;z-index:999999;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:'Inter',sans-serif;color:white;transition:opacity 0.5s ease;">
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse 1.5s infinite;">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>
-        </svg>
-        <h2 style="margin-top:1.5rem;font-size:1.5rem;font-weight:600;">Config Store</h2>
-        <p style="color:#8892b0;margin-top:0.5rem;font-size:0.9rem;">Loading marketplace...</p>
+        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:pulse 1.5s infinite;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <h2 style="margin-top:1.5rem;font-size:1.5rem;font-weight:600;">CC Store</h2>
+        <p style="color:#8892b0;margin-top:0.5rem;font-size:0.9rem;">Loading rewards...</p>
         <div style="margin-top:2rem;width:200px;height:4px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;">
             <div id="preloader-bar" style="width:0%;height:100%;background:#4f46e5;transition:width 2.5s cubic-bezier(0.4,0,0.2,1);"></div>
         </div>
@@ -379,11 +160,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => { document.getElementById('preloader-bar').style.width = '100%'; }, 100);
-            setTimeout(() => {
-                const p = document.getElementById('secure-preloader');
-                p.style.opacity = '0';
-                setTimeout(() => { p.style.display = 'none'; }, 500);
-            }, 2600);
+            setTimeout(() => { const p = document.getElementById('secure-preloader'); p.style.opacity = '0'; setTimeout(() => { p.style.display = 'none'; }, 500); }, 2600);
         });
     </script>
     <style>@keyframes pulse { 0%{transform:scale(1);opacity:1;} 50%{transform:scale(1.1);opacity:0.7;} 100%{transform:scale(1);opacity:1;} }</style>
@@ -395,7 +172,6 @@
         <div class="glow-orb orb-3"></div>
     </div>
 
-    <!-- Navbar -->
     <header class="navbar" data-aos="fade-down" data-aos-duration="800">
         <div class="nav-container">
             <div class="logo-wrapper" style="display:flex;align-items:center;gap:0.8rem;">
@@ -420,62 +196,73 @@
 
     <main class="store-container">
         <div class="store-header" data-aos="fade-up">
-            <h1>Config <span class="text-gradient">Store</span></h1>
-            <p>Browse free and premium configs from the community. Buy with Column Coins.</p>
+            <h1>CC <span class="text-gradient">Store</span></h1>
+            <p>Spend your Column Coins on exclusive rewards. Items are rare — save up.</p>
         </div>
 
-        <!-- Auth gate -->
         <div id="auth-gate" data-aos="fade-up" style="display:none;">
-            <svg viewBox="0 0 24 24" width="48" height="48" stroke="#4f46e5" stroke-width="1.5" fill="none">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="#4f46e5" stroke-width="1.5" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <h2 style="font-size:1.5rem;">Login Required</h2>
-            <p>You need an active license to browse the Config Store.</p>
+            <p>You need an active license to access the CC Store.</p>
             <a href="login.html" class="btn-primary btn-large btn-glow">Go to Portal</a>
         </div>
 
-        <!-- Store content -->
         <div id="store-content" style="display:none;">
-            <!-- Balance bar -->
             <div class="balance-bar" data-aos="fade-up">
                 <div class="balance-bar-info">
-                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#818cf8" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="#818cf8" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
                     <span>Your balance:</span>
-                    <span class="balance-bar-amount" id="balance-display">Loading...</span>
+                    <span class="balance-amount" id="balance-display">Loading...</span>
                 </div>
-                <a href="wallet.html">+ Get More CC</a>
+                <a href="wallet.html">+ Earn CC</a>
             </div>
 
-            <!-- Filters -->
-            <div class="filter-bar" data-aos="fade-up">
-                <input type="text" id="search-input" placeholder="Search configs, heroes, authors...">
-                <button class="filter-tab active" data-filter="all">All</button>
-                <button class="filter-tab" data-filter="free">Free</button>
-                <button class="filter-tab" data-filter="paid">Paid</button>
+            <!-- Owner badge -->
+            <div id="owner-badge" style="display:none; background:linear-gradient(135deg,rgba(245,158,11,0.15),rgba(239,68,68,0.1)); border:1px solid rgba(245,158,11,0.3); border-radius:12px; padding:0.9rem 1.25rem; margin-bottom:1.5rem; display:none; align-items:center; gap:0.75rem;">
+                <span style="font-size:1.4rem;">👑</span>
+                <div>
+                    <div style="font-weight:700; color:#fbbf24;">Owner Account</div>
+                    <div style="font-size:0.82rem; color:var(--text-muted);">You have full access to all rewards. Purchases are free for you.</div>
+                </div>
             </div>
 
-            <!-- Grid -->
-            <div id="config-grid" class="config-grid">
-                <div class="loading-spinner">Loading configs...</div>
+            <div class="notice-box" data-aos="fade-up">
+                ⚠️ After purchase, open a Discord ticket with your order. Staff will manually apply your reward within 24h. Keep your license key ready.
             </div>
+
+            <!-- Subscriptions -->
+            <div class="section-title" data-aos="fade-up">
+                <span>🔑 Subscriptions</span>
+            </div>
+            <div class="items-grid" id="subs-grid" data-aos="fade-up"></div>
+
+            <!-- Perks -->
+            <div class="section-title" data-aos="fade-up">
+                <span>⚡ Account Perks</span>
+            </div>
+            <div class="items-grid" id="perks-grid" data-aos="fade-up"></div>
+
+            <!-- Exclusive -->
+            <div class="section-title" data-aos="fade-up">
+                <span>👑 Exclusive</span>
+            </div>
+            <div class="items-grid" id="exclusive-grid" data-aos="fade-up"></div>
         </div>
     </main>
 
-    <!-- Buy confirm modal -->
+    <!-- Confirm modal -->
     <div class="modal-overlay" id="buy-modal">
         <div class="modal-box">
             <button class="modal-close" onclick="closeBuyModal()">&#x2715;</button>
-            <h3>Confirm Purchase</h3>
-            <p id="buy-modal-desc">Are you sure you want to buy this config?</p>
+            <h3 id="modal-title">Confirm Purchase</h3>
+            <p id="modal-desc"></p>
             <div class="modal-btns">
-                <button id="buy-confirm-btn" class="btn-primary" style="flex:1;">Confirm Buy</button>
+                <button id="buy-confirm-btn" class="btn-primary" style="flex:1;">Confirm</button>
                 <button onclick="closeBuyModal()" class="btn-secondary" style="flex:1;">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Toast container -->
     <div class="toast-container" id="toast-container"></div>
 
     <script>
@@ -483,294 +270,254 @@
         const canvas = document.getElementById('rain-canvas');
         if (canvas) {
             const ctx = canvas.getContext('2d');
-            let width = canvas.width = window.innerWidth;
-            let height = canvas.height = window.innerHeight;
+            let width = canvas.width = window.innerWidth, height = canvas.height = window.innerHeight;
             window.addEventListener('resize', () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
             const chars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*'.split('');
-            const fs = 16; let cols = width / fs; let drops = [];
-            for (let x = 0; x < cols; x++) drops[x] = 1;
-            function drawRain() {
-                ctx.fillStyle = 'rgba(5,5,8,0.1)'; ctx.fillRect(0, 0, width, height);
-                ctx.fillStyle = '#4f46e5'; ctx.font = fs + 'px monospace';
-                for (let i = 0; i < drops.length; i++) {
-                    ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fs, drops[i] * fs);
-                    if (drops[i] * fs > height && Math.random() > 0.975) drops[i] = 0;
-                    drops[i]++;
-                }
-            }
-            setInterval(drawRain, 35);
+            const fs = 16; let cols = width/fs, drops = Array(Math.ceil(cols)).fill(1);
+            setInterval(() => { ctx.fillStyle='rgba(5,5,8,0.1)'; ctx.fillRect(0,0,width,height); ctx.fillStyle='#4f46e5'; ctx.font=fs+'px monospace'; drops.forEach((y,i) => { ctx.fillText(chars[Math.floor(Math.random()*chars.length)], i*fs, y*fs); if(y*fs>height&&Math.random()>0.975) drops[i]=0; drops[i]++; }); }, 35);
         }
 
-        // KeyAuth
         const API_URL = "https://keyauth.win/api/1.2/";
         const APP_NAME = "column ow";
         const OWNER_ID = "msmJ8x5So5";
-
+        const OWNER_KEY = 'owner-8ivWfL-DGBLsO';
         const savedKey = localStorage.getItem('saved_license');
-        const authGate = document.getElementById('auth-gate');
-        const storeContent = document.getElementById('store-content');
-        const configGrid = document.getElementById('config-grid');
-        const searchInput = document.getElementById('search-input');
+        const isOwner = savedKey === OWNER_KEY;
+        let currentSessionId = null, currentBalance = 0, ownedItems = [];
+        let pendingItem = null;
 
-        let currentSessionId = null;
-        let currentBalance = 0;
-        let allConfigs = [];
-        let currentFilter = 'all';
-        let pendingBuyConfig = null;
+        // ── Store catalogue ──────────────────────────────────────────
+        const STORE = {
+            subs: [
+                { id: 'sub_1d', name: '1 Day Access', icon: '⚡', desc: 'Full access to Column for 24 hours. For trying it out.', price: 500, usd: 3, tier: 'common' },
+                { id: 'sub_1m', name: '1 Month Sub', icon: '📅', desc: 'Full access to Column for 30 days. Save up — this is not cheap.', price: 8000, usd: 12, tier: 'epic' },
+                { id: 'sub_3m', name: '3 Month Sub', icon: '🏆', desc: 'Full access to Column for 90 days. Extremely rare reward.', price: 20000, usd: 25, tier: 'legendary' },
+            ],
+            perks: [
+                { id: 'extra_hwid', name: 'Extra HWID Slot', icon: '💻', desc: 'Unlock a second device on your license permanently.', price: 5000, tier: 'epic' },
+                { id: 'early_access', name: 'Early Access', icon: '⚡', desc: 'Get new features and updates before everyone else.', price: 3000, tier: 'rare' },
+                { id: 'priority_support', name: 'Priority Support', icon: '🎯', desc: 'Skip the queue — get answers in Discord within 1h.', price: 2000, tier: 'rare' },
+            ],
+            exclusive: [
+                { id: 'reseller', name: 'Reseller License', icon: '👑', desc: 'Become an official Column reseller. Set your own prices. Very limited slots.', price: 50000, tier: 'legendary' },
+                { id: 'lifetime', name: 'Lifetime Sub', icon: '♾️', desc: 'Never pay again. Permanent access. Only for the most dedicated grinders.', price: 100000, tier: 'legendary' },
+                { id: 'custom_tag', name: 'Custom Discord Tag', icon: '✨', desc: 'Get a custom role colour and tag in the Discord server.', price: 8000, tier: 'epic' },
+            ]
+        };
 
-        function escHtml(s) {
-            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-        }
+        function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-        function showToast(msg, type = 'info') {
+        function showToast(msg, type='info') {
             const tc = document.getElementById('toast-container');
             const t = document.createElement('div');
-            t.className = 'toast ' + type;
-            t.textContent = msg;
-            tc.appendChild(t);
+            t.className = 'toast ' + type; t.textContent = msg; tc.appendChild(t);
             requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
-            setTimeout(() => {
-                t.classList.remove('show');
-                setTimeout(() => t.remove(), 400);
-            }, 4000);
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 4000);
         }
 
         async function keyAuthInit() {
-            const url = `${API_URL}?type=init&ver=1.0&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
-            const res = await fetch(url);
-            const data = await res.json();
-            if (data.success) return data.sessionid;
-            throw new Error(data.message || "Init failed");
+            const r = await fetch(`${API_URL}?type=init&ver=1.0&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`);
+            const d = await r.json(); if(d.success) return d.sessionid; throw new Error(d.message);
+        }
+        async function keyAuthLogin(key, sid) {
+            const r = await fetch(`${API_URL}?type=license&key=${encodeURIComponent(key)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`);
+            return r.json();
+        }
+        async function keyAuthGetVar(sid, name) {
+            try { const r = await fetch(`${API_URL}?type=getvar&var=${encodeURIComponent(name)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`); return r.json(); } catch(e) { return {success:false}; }
+        }
+        async function keyAuthSetVar(sid, name, data) {
+            try { const r = await fetch(`${API_URL}?type=setvar&var=${encodeURIComponent(name)}&data=${encodeURIComponent(data)}&sessionid=${sid}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`); return r.json(); } catch(e) { return {success:false}; }
         }
 
-        async function keyAuthLogin(key, sessionId) {
-            const url = `${API_URL}?type=license&key=${encodeURIComponent(key)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
-            const res = await fetch(url);
-            return res.json();
-        }
+        function updateBalance(b) { currentBalance = parseInt(b)||0; document.getElementById('balance-display').textContent = currentBalance.toLocaleString() + ' CC'; }
 
-        async function keyAuthGetVar(sessionId, varName) {
-            try {
-                const url = `${API_URL}?type=getvar&var=${encodeURIComponent(varName)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
-                const res = await fetch(url);
-                return await res.json();
-            } catch(e) { return { success: false }; }
-        }
-
-        async function keyAuthSetVar(sessionId, varName, data) {
-            try {
-                const url = `${API_URL}?type=setvar&var=${encodeURIComponent(varName)}&data=${encodeURIComponent(data)}&sessionid=${sessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`;
-                const res = await fetch(url);
-                return await res.json();
-            } catch(e) { return { success: false, message: "Network error" }; }
-        }
-
-        function updateBalanceDisplay(balance) {
-            currentBalance = parseInt(balance) || 0;
-            document.getElementById('balance-display').textContent = currentBalance.toLocaleString() + ' CC';
-        }
-
-        // Track which paid configs the user has already purchased (stored in cc_purchased var)
-        let purchasedCodes = [];
-
-        async function loadPurchased() {
-            const pVar = await keyAuthGetVar(currentSessionId, 'cc_purchased');
-            if (pVar.success && pVar.response) {
-                try { purchasedCodes = JSON.parse(pVar.response); } catch(e) {}
-            }
-        }
-
-        async function savePurchased() {
-            await keyAuthSetVar(currentSessionId, 'cc_purchased', JSON.stringify(purchasedCodes));
-        }
-
-        function renderConfigs(configs) {
-            if (!configs.length) {
-                configGrid.innerHTML = '<div class="empty-state">No configs found.</div>';
-                return;
-            }
-            configGrid.innerHTML = configs.map(c => {
-                const price = parseInt(c.price) || 0;
-                const isFree = price === 0;
-                const isPurchased = purchasedCodes.includes(c.code);
-                const priceBadge = isFree
-                    ? `<span class="price-badge free">FREE</span>`
-                    : `<span class="price-badge">${price} CC</span>`;
-
-                let actionBtn;
-                if (isFree) {
-                    actionBtn = `<button class="copy-code-btn" onclick="copyCode(this, '${escHtml(c.code)}')">
-                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                        Copy Code
-                    </button>`;
-                } else if (isPurchased) {
-                    actionBtn = `<div class="revealed-code" onclick="copyCode(this, '${escHtml(c.code)}')" title="Click to copy">${escHtml(c.code)}</div>`;
-                } else {
-                    actionBtn = `<button class="buy-btn" onclick="startBuy('${escHtml(c.code)}', ${price}, '${escHtml(c.label || c.hero || 'Config')}')">
-                        <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        Buy for ${price} CC
-                    </button>`;
-                }
-
+        function renderGrid(containerId, items) {
+            const el = document.getElementById(containerId);
+            el.innerHTML = items.map(item => {
+                const owned = ownedItems.includes(item.id);
+                const effectivePrice = isOwner ? 0 : item.price;
+                const canAfford = isOwner || currentBalance >= item.price;
                 return `
-                <div class="config-card ${isFree ? '' : 'paid-card'}" data-code="${escHtml(c.code)}">
-                    ${priceBadge}
-                    <div class="config-card-header">
-                        <span class="config-code">${escHtml(c.code || '')}</span>
-                        <span class="config-hero-badge">${escHtml(c.hero || 'General')}</span>
+                <div class="item-card tier-${item.tier}">
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <span class="item-icon">${item.icon}</span>
+                        <span class="tier-badge tier-${item.tier}">${item.tier}</span>
                     </div>
-                    <div class="config-label">${escHtml(c.label || c.hero || 'Config')}</div>
-                    <div class="config-meta">
-                        <span>${escHtml(c.date || '')}</span>
-                        ${c.author ? `<span>by ${escHtml(c.author)}</span>` : ''}
+                    <div class="item-name">${escHtml(item.name)}</div>
+                    <div class="item-desc">${escHtml(item.desc)}</div>
+                    <div class="item-footer">
+                        <div class="item-price">${isOwner ? '<span style="color:#fbbf24">FREE</span>' : item.price.toLocaleString() + ' <span class="cc-unit">CC</span>'}</div>
+                        ${owned
+                            ? `<button class="buy-btn owned" disabled>✓ Ordered</button>`
+                            : `<button class="buy-btn" onclick="startBuy('${item.id}')" ${!canAfford?'disabled title="Not enough CC"':''}>${isOwner?'Give Free':'Buy'}</button>`
+                        }
                     </div>
-                    ${actionBtn}
+                    ${item.usd ? `<button class="buy-btn" style="width:100%;background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.35);color:#2ecc71;margin-top:0.4rem;" onclick="buyCrypto('${item.id}')">💳 Buy with Crypto — $${item.usd}</button>` : ''}
                 </div>`;
             }).join('');
         }
 
-        function applyFilters() {
-            const q = searchInput.value.toLowerCase();
-            let filtered = allConfigs.filter(c =>
-                (c.label || '').toLowerCase().includes(q) ||
-                (c.hero || '').toLowerCase().includes(q) ||
-                (c.author || '').toLowerCase().includes(q) ||
-                (c.code || '').toLowerCase().includes(q)
-            );
-            if (currentFilter === 'free') filtered = filtered.filter(c => (parseInt(c.price) || 0) === 0);
-            if (currentFilter === 'paid') filtered = filtered.filter(c => (parseInt(c.price) || 0) > 0);
-            renderConfigs(filtered);
+        function renderAll() {
+            renderGrid('subs-grid', STORE.subs);
+            renderGrid('perks-grid', STORE.perks);
+            renderGrid('exclusive-grid', STORE.exclusive);
         }
 
-        function copyCode(btn, code) {
-            navigator.clipboard.writeText(code).then(() => {
-                const orig = btn.innerHTML || btn.textContent;
-                if (btn.tagName === 'DIV') {
-                    btn.textContent = 'Copied!';
-                    btn.style.color = '#10b981';
-                    setTimeout(() => { btn.textContent = code; btn.style.color = ''; }, 2000);
-                } else {
-                    btn.textContent = 'Copied!';
-                    btn.classList.add('copied');
-                    setTimeout(() => {
-                        btn.innerHTML = `<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Code`;
-                        btn.classList.remove('copied');
-                    }, 2000);
-                }
-            });
-        }
-
-        function startBuy(code, price, label) {
-            if (currentBalance < price) {
-                showToast(`Insufficient CC. You need ${price} CC. Get more in your wallet.`, 'error');
-                return;
-            }
-            pendingBuyConfig = { code, price, label };
-            document.getElementById('buy-modal-desc').innerHTML =
-                `Purchase <strong>${escHtml(label)}</strong> for <strong style="color:#818cf8;">${price} CC</strong>?<br><br>` +
-                `<span style="color:var(--text-muted); font-size:0.85rem;">Your balance after: ${currentBalance - price} CC</span>`;
+        function startBuy(itemId) {
+            const allItems = [...STORE.subs, ...STORE.perks, ...STORE.exclusive];
+            const item = allItems.find(i => i.id === itemId);
+            if (!item) return;
+            if (!isOwner && currentBalance < item.price) { showToast('Not enough CC. Earn more in your wallet.', 'error'); return; }
+            pendingItem = item;
+            const cost = isOwner ? 0 : item.price;
+            document.getElementById('modal-title').textContent = isOwner ? `Give Free: ${item.name}` : `Buy ${item.name}`;
+            document.getElementById('modal-desc').innerHTML =
+                `${isOwner ? '<strong style="color:#fbbf24;">Owner override — no CC deducted.</strong><br><br>' : ''}` +
+                `Purchase <strong>${escHtml(item.name)}</strong> for <strong style="color:#818cf8;">${cost === 0 ? 'FREE' : cost.toLocaleString() + ' CC'}</strong>?<br><br>` +
+                `${!isOwner ? `<span style="color:var(--text-muted);font-size:0.85rem;">Balance after: ${(currentBalance-cost).toLocaleString()} CC</span><br><br>` : ''}` +
+                `<span style="color:var(--text-muted);font-size:0.82rem;">⚠️ Open a Discord ticket after purchase. Staff will apply your reward within 24h.</span>`;
             document.getElementById('buy-modal').classList.add('open');
         }
 
-        function closeBuyModal() {
-            document.getElementById('buy-modal').classList.remove('open');
-            pendingBuyConfig = null;
-        }
-
-        document.getElementById('buy-modal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('buy-modal')) closeBuyModal();
-        });
+        function closeBuyModal() { document.getElementById('buy-modal').classList.remove('open'); pendingItem = null; }
+        document.getElementById('buy-modal').addEventListener('click', e => { if(e.target===document.getElementById('buy-modal')) closeBuyModal(); });
 
         document.getElementById('buy-confirm-btn').addEventListener('click', async () => {
-            if (!pendingBuyConfig) return;
-            const { code, price, label } = pendingBuyConfig;
+            const item = pendingItem;
+            if (!item) return;
+            pendingItem = item; // keep reference during async
             const btn = document.getElementById('buy-confirm-btn');
-            btn.disabled = true;
-            btn.textContent = 'Processing...';
-
+            btn.disabled = true; btn.textContent = 'Processing...';
             try {
-                const newBalance = currentBalance - price;
-                const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBalance.toString());
-                if (!res.success) {
-                    showToast('Failed to process purchase: ' + (res.message || 'Unknown error'), 'error');
-                    return;
+                if (!isOwner) {
+                    const cost = item.price;
+                    const newBal = currentBalance - cost;
+                    const res = await keyAuthSetVar(currentSessionId, 'cc_balance', newBal.toString());
+                    if (!res.success) { showToast('Failed: ' + (res.message||'error'), 'error'); btn.disabled=false; btn.textContent='Confirm'; return; }
+                    updateBalance(newBal);
+                    ownedItems.push(item.id);
+                    await keyAuthSetVar(currentSessionId, 'cc_owned', JSON.stringify(ownedItems));
+                    const txVar = await keyAuthGetVar(currentSessionId, 'cc_log');
+                    let txArr = []; try { txArr = JSON.parse(txVar.response||'[]'); } catch(e){}
+                    txArr.push({ desc: `Bought: ${item.name}`, amount: -cost, date: new Date().toLocaleString(), key: savedKey.substring(0,8)+'...' });
+                    if(txArr.length>20) txArr = txArr.slice(-20);
+                    await keyAuthSetVar(currentSessionId, 'cc_log', JSON.stringify(txArr));
+                    await saveOrder(item.name, cost);
+                } else {
+                    ownedItems.push(item.id);
                 }
-                updateBalanceDisplay(newBalance);
-
-                // Record purchase
-                purchasedCodes.push(code);
-                await savePurchased();
-
-                // Log transaction
-                const txVar = await keyAuthGetVar(currentSessionId, 'cc_log');
-                let txArray = [];
-                if (txVar.success && txVar.response) {
-                    try { txArray = JSON.parse(txVar.response); } catch(e) {}
-                }
-                txArray.push({ desc: `Bought config ${code}`, amount: -price, date: new Date().toLocaleString() });
-                if (txArray.length > 20) txArray = txArray.slice(txArray.length - 20);
-                await keyAuthSetVar(currentSessionId, 'cc_log', JSON.stringify(txArray));
-
                 closeBuyModal();
-                showToast(`Purchased ${label}! Code revealed on the card.`, 'success');
-                applyFilters();
-            } catch(e) {
-                showToast('Network error. Please try again.', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.textContent = 'Confirm Buy';
-            }
+                showToast(`${item.name} ordered! Open a Discord ticket to redeem.`, 'success');
+                renderAll();
+            } catch(e) { showToast('Purchase failed: ' + e.message, 'error'); }
+            finally { btn.disabled=false; btn.textContent='Confirm'; }
         });
 
-        // Filter tabs
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentFilter = tab.dataset.filter;
-                applyFilters();
-            });
-        });
-
-        searchInput.addEventListener('input', applyFilters);
-
-        // Make functions global
-        window.copyCode = copyCode;
-        window.startBuy = startBuy;
-        window.closeBuyModal = closeBuyModal;
+        // Record a CC-store order via the backend (no token in the page).
+        async function saveOrder(itemName, cost) {
+            try {
+                await fetch(`${BACKEND.url}/cc-order`, {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ licenseKey: savedKey, item: itemName, cost })
+                });
+            } catch(e) {}
+        }
 
         async function initStore() {
-            if (!savedKey) {
-                authGate.style.display = 'flex';
+            if (!savedKey) { document.getElementById('auth-gate').style.display='flex'; return; }
+            document.getElementById('store-content').style.display='block';
+
+            // Owner bypasses KeyAuth entirely
+            if (isOwner) {
+                updateBalance(999999);
+                const badge = document.getElementById('owner-badge');
+                if (badge) badge.style.display = 'flex';
+                renderAll();
                 return;
             }
-            storeContent.style.display = 'block';
+
             try {
                 currentSessionId = await keyAuthInit();
-                const loginResult = await keyAuthLogin(savedKey, currentSessionId);
-                if (!loginResult.success) {
-                    authGate.style.display = 'flex';
-                    storeContent.style.display = 'none';
-                    return;
-                }
-                // Fetch balance
-                const balanceVar = await keyAuthGetVar(currentSessionId, 'cc_balance');
-                const balance = (balanceVar.success && balanceVar.response) ? balanceVar.response : '0';
-                updateBalanceDisplay(balance);
-                // Load purchased list
-                await loadPurchased();
-                // Load configs
-                configGrid.innerHTML = '<div class="loading-spinner">Loading configs...</div>';
-                allConfigs = await CONFIG_API.listConfigs();
-                applyFilters();
-            } catch(e) {
-                configGrid.innerHTML = `<div class="empty-state">Error loading store: ${escHtml(e.message)}</div>`;
+                const login = await keyAuthLogin(savedKey, currentSessionId);
+                if (!login.success) { document.getElementById('auth-gate').style.display='flex'; document.getElementById('store-content').style.display='none'; return; }
+                const balVar = await keyAuthGetVar(currentSessionId, 'cc_balance');
+                updateBalance(balVar.success && balVar.response ? balVar.response : '0');
+                const ownedVar = await keyAuthGetVar(currentSessionId, 'cc_owned');
+                if (ownedVar.success && ownedVar.response) { try { ownedItems = JSON.parse(ownedVar.response); } catch(e){} }
+                renderAll();
+            } catch(e) { showToast('Failed to load store: ' + e.message, 'error'); }
+        }
+
+        // ── Crypto checkout (real money → KeyAuth key + Discord role) ──────────
+        // After Discord OAuth the backend redirects to store.html#dc=<ref>.
+        // We stash that ref so checkout can link the payment to the buyer's Discord.
+        function getDiscordRef() {
+            const m = location.hash.match(/dc=([A-Za-z0-9]+)/);
+            if (m) localStorage.setItem('discord_ref', m[1]);
+            return localStorage.getItem('discord_ref');
+        }
+
+        async function buyCrypto(itemId) {
+            const item = STORE.subs.find(i => i.id === itemId);
+            if (!item || !item.usd) return;
+
+            const ref = getDiscordRef();
+            if (!ref) {
+                // Need a Discord identity first so we can auto-assign the role.
+                showToast('Connect Discord first so we can give you the role…', 'info');
+                setTimeout(() => { location.href = BACKEND.discordLoginUrl(); }, 900);
+                return;
+            }
+
+            try {
+                showToast('Creating your crypto invoice…', 'info');
+                const { orderId, invoiceUrl } = await BACKEND.checkout({
+                    itemId: item.id, itemName: item.name, priceUsd: item.usd, discordRef: ref
+                });
+                localStorage.setItem('pending_order', orderId);
+                window.open(invoiceUrl, '_blank');
+                pollOrder(orderId);
+            } catch (e) {
+                showToast('Could not start checkout: ' + e.message, 'error');
             }
         }
 
-        window.addEventListener('DOMContentLoaded', initStore);
-    </script>
+        // Poll until the backend marks the order delivered, then show the key.
+        async function pollOrder(orderId) {
+            let tries = 0;
+            const timer = setInterval(async () => {
+                tries++;
+                const o = await BACKEND.getOrder(orderId);
+                if (o && o.status === 'delivered') {
+                    clearInterval(timer);
+                    localStorage.removeItem('pending_order');
+                    showToast('Payment confirmed! Key + role delivered. Check your Discord DMs.', 'success');
+                    if (o.key) {
+                        document.getElementById('modal-title').textContent = '🎉 Your License Key';
+                        document.getElementById('modal-desc').innerHTML =
+                            `Payment confirmed for <strong>${escHtml(o.itemName)}</strong>.<br><br>` +
+                            `<code style="display:block;background:#11141a;border:1px solid var(--card-border);padding:0.75rem;border-radius:8px;color:#2ecc71;word-break:break-all;">${escHtml(o.key)}</code><br>` +
+                            `Your Discord role has been added and the key was DM'd to you.`;
+                        document.getElementById('buy-modal').classList.add('open');
+                    }
+                }
+                if (tries > 120) clearInterval(timer); // stop after ~20 min
+            }, 10000);
+        }
 
+        // Resume polling if the buyer returned to the page mid-payment.
+        (function resumePending() {
+            const pid = new URLSearchParams(location.search).get('paid') || localStorage.getItem('pending_order');
+            if (pid) pollOrder(pid);
+        })();
+
+        window.buyCrypto = buyCrypto;
+        window.startBuy = startBuy;
+        window.closeBuyModal = closeBuyModal;
+        window.addEventListener('DOMContentLoaded', () => { getDiscordRef(); initStore(); });
+    </script>
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
     <script>AOS.init({ once: true, duration: 800 });</script>
 </body>

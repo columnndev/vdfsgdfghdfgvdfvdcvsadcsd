@@ -1,2 +1,8 @@
 node_modules/
 .env
+
+# Backend (deployed separately to Cloudflare — never publish to Pages)
+backend/
+.dev.vars
+.wrangler/
+*.log
