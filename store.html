@@ -353,7 +353,6 @@
                             : `<button class="buy-btn" onclick="startBuy('${item.id}')" ${!canAfford?'disabled title="Not enough CC"':''}>${isOwner?'Give Free':'Buy'}</button>`
                         }
                     </div>
-                    ${item.usd ? `<button class="buy-btn" style="width:100%;background:rgba(46,204,113,0.12);border:1px solid rgba(46,204,113,0.35);color:#2ecc71;margin-top:0.4rem;" onclick="buyCrypto('${item.id}')">💳 Buy with Crypto — $${item.usd}</button>` : ''}
                 </div>`;
             }).join('');
         }

@@ -91,8 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Shopping Cart Logic ---
+    // Persisted so the cart survives the Discord OAuth round-trip during checkout.
     let cart = [];
-    
+    try { cart = JSON.parse(localStorage.getItem('column_cart') || '[]'); } catch (e) { cart = []; }
+
     const cartToggle = document.getElementById('cart-toggle');
     const closeCart = document.getElementById('close-cart');
     const cartSidebar = document.getElementById('cart-sidebar');
@@ -140,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update Cart UI
     function updateCartUI() {
+        try { localStorage.setItem('column_cart', JSON.stringify(cart)); } catch (e) {}
         // Update badge count
         const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
         cartBadge.textContent = totalItems;
@@ -194,15 +197,78 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ── Crypto checkout: Discord connect -> NOWPayments invoice -> key + role ──
+    // After Discord OAuth the backend sends the buyer to index.html#dc=<ref>.
+    function getDiscordRef() {
+        const m = location.hash.match(/dc=([A-Za-z0-9]+)/);
+        if (m) localStorage.setItem('discord_ref', m[1]);
+        return localStorage.getItem('discord_ref');
+    }
+
     // Checkout button
-    checkoutBtn.addEventListener('click', () => {
-        // Redirect to Discord for purchase
-        window.location.href = "https://discord.gg/2dxtDMp8";
-        
-        cart = []; 
-        updateCartUI();
-        toggleCart();
+    checkoutBtn.addEventListener('click', async () => {
+        if (cart.length === 0) return;
+
+        // Need the buyer's Discord first so we can auto-assign the role.
+        const ref = getDiscordRef();
+        if (!ref) {
+            showToast('Connect Discord so we can deliver your role…');
+            setTimeout(() => { location.href = BACKEND.discordLoginUrl(); }, 900);
+            return;
+        }
+
+        // Bill the whole cart as one order; key is issued for the top item.
+        const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+        const primary = cart.slice().sort((a, b) => b.price - a.price)[0];
+
+        checkoutBtn.disabled = true;
+        checkoutBtn.textContent = 'Creating invoice…';
+        try {
+            const { orderId, invoiceUrl } = await BACKEND.checkout({
+                itemId: primary.id,
+                itemName: cart.map(i => `${i.name} x${i.qty}`).join(', '),
+                priceUsd: Number(total.toFixed(2)),
+                discordRef: ref
+            });
+            localStorage.setItem('pending_order', orderId);
+            window.location.href = invoiceUrl; // go to the hosted crypto checkout
+        } catch (e) {
+            showToast('Checkout failed: ' + e.message);
+            checkoutBtn.disabled = false;
+            checkoutBtn.textContent = 'Checkout';
+        }
     });
+
+    // Capture the Discord ref when the buyer returns from OAuth, and render any
+    // cart restored from localStorage.
+    getDiscordRef();
+    updateCartUI();
+
+    // If the buyer just came back from Discord, nudge them to finish checkout.
+    if (location.hash.includes('dc=') && cart.length > 0) {
+        showToast('Discord connected — click Checkout to pay.');
+        if (cartSidebar) { cartSidebar.classList.add('open'); cartOverlay.classList.add('show'); }
+    }
+
+    // After the hosted checkout, NOWPayments returns the buyer to ?paid=<orderId>.
+    // Poll the backend until the key is delivered, then show it and clear the cart.
+    async function pollOrder(orderId) {
+        let tries = 0;
+        const timer = setInterval(async () => {
+            tries++;
+            const o = await BACKEND.getOrder(orderId);
+            if (o && o.status === 'delivered') {
+                clearInterval(timer);
+                localStorage.removeItem('pending_order');
+                cart = []; updateCartUI();
+                showToast('Payment confirmed! Key + role delivered — check your Discord DMs.');
+                if (o.key) alert('Your Column license key:\n\n' + o.key + '\n\nYour Discord role has been added and the key was DM\'d to you.');
+            }
+            if (tries > 120) clearInterval(timer); // give up after ~20 min
+        }, 10000);
+    }
+    const paidId = new URLSearchParams(location.search).get('paid') || localStorage.getItem('pending_order');
+    if (paidId) pollOrder(paidId);
 
     // Toast Notification System
     function showToast(message) {
