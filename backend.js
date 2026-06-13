@@ -1,7 +1,7 @@
 // Public backend config (safe to expose — contains NO secrets).
 // Point this at your deployed Cloudflare Worker.
 const BACKEND = {
-    url: "https://column-backend.gustavsimsbussines.workers.dev",
+    url: "https://api.column.wtf",
 
     // Start Discord OAuth (identify + guilds.join) so the buyer can get auto-role.
     discordLoginUrl() { return `${this.url}/discord/login`; },
