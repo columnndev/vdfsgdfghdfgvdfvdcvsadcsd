@@ -735,8 +735,39 @@
             loginView.style.display = 'flex';
         });
 
-        downloadBtn.addEventListener('click', () => {
-            window.location.href = "https://github.com/columnndev/columnv1/archive/refs/heads/main.zip";
+        downloadBtn.addEventListener('click', async () => {
+            if (!currentSessionId) {
+                alert('Not authenticated. Please log in again.');
+                return;
+            }
+            const origHTML = downloadBtn.innerHTML;
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<svg class="loader-icon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" style="animation:spin 1s linear infinite"><circle cx="12" cy="12" r="10" stroke-dasharray="31.4 31.4"/></svg> Preparing...';
+            try {
+                const res = await fetch('https://api.column.wtf/download/loader', {
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json' },
+                    body: JSON.stringify({ sessionid: currentSessionId }),
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    alert('Download failed: ' + (err.error || res.status));
+                    return;
+                }
+                const blob = await res.blob();
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'ColumnLoader.exe';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            } catch (e) {
+                alert('Download error: ' + e.message);
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = origHTML;
+            }
         });
 
         // Removed KeyAuth cleaner fetching logic
