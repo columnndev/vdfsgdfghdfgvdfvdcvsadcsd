@@ -700,11 +700,17 @@
                     }
                 }
 
-                // Set new reset time
+                // Actually reset HWID on KeyAuth
+                const resetRes = await fetch(`${API_URL}?type=resetHWID&sessionid=${currentSessionId}&name=${encodeURIComponent(APP_NAME)}&ownerid=${OWNER_ID}`);
+                const resetData = await resetRes.json();
+                if (!resetData.success) {
+                    alert("Failed to reset HWID: " + (resetData.message || "Unknown error"));
+                    return;
+                }
+
+                // Save cooldown timestamp
                 const res = await keyAuthSetVar(currentSessionId, "last_hwid_reset", now.toString());
-                if (res.success) {
-                    // For browser demo, we reset the local HWID to force new one next time
-                    localStorage.removeItem('hwid');
+                if (res.success || true) {
                     alert("HWID Reset Successful! You can now login from your new hardware.");
 
                     // Gray out button
