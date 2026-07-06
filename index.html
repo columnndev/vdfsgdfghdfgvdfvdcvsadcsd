@@ -19,7 +19,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=6">
     <script src="security.js"></script>
     <!-- Crisp Live Chat -->
     <script type="text/javascript">window.$crisp=[];window.CRISP_WEBSITE_ID="50c7e67f-bf5e-4bd8-b6e5-3304fe3d5b3f";(function(){d=document;s=d.createElement("script");s.src="https://client.crisp.chat/l.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
@@ -124,9 +124,13 @@
         <!-- Hero Section -->
         <section id="home" class="hero">
             <div class="hero-content">
-                <div class="pill-badge" style="padding: 0.6rem 1.4rem; font-size: 0.9rem; margin-bottom: 2rem; border-color: var(--accent-secondary); box-shadow: 0 0 15px rgba(236, 72, 153, 0.2);">
-                    <span class="pulse-dot" style="background: var(--accent-secondary); box-shadow: 0 0 8px var(--accent-secondary);"></span>
-                    <span>🚀</span> <span class="hack-text" data-value="OFFICIALLY LAUNCHED">OFFICIALLY LAUNCHED</span> <span style="font-weight: 700; color: var(--accent-secondary); margin: 0 8px; display: inline-block; text-shadow: 0 0 10px var(--accent-secondary);">| SYSTEM ONLINE |</span> <span class="hack-text" data-value="20% LAUNCH DISCOUNT">20% LAUNCH DISCOUNT</span> <span>🔥</span>
+                <div class="discount-badge" data-aos="fade-up" data-aos-duration="1000">
+                    <span class="discount-tag">20% OFF</span>
+                    <span class="discount-text">Launch discount active right now</span>
+                    <span class="discount-status">
+                        <span class="pulse-dot"></span>
+                        SYSTEM ONLINE
+                    </span>
                 </div>
                 <h1 class="hero-title" data-aos="fade-up" data-aos-duration="1000">Experience <span class="text-gradient">Absolute Dominance</span></h1>
                 <p class="hero-subtitle" data-aos="fade-up" data-aos-duration="1000" data-aos-delay="200">The most advanced, undetected, and feature-rich utility for Overwatch. Dominate the ladder with flawless predictive aiming and unbeatable security.</p>
@@ -240,7 +244,8 @@
             
             <div class="pricing-container">
                 <!-- Daily Plan -->
-                <div class="pricing-card glass-panel" id="card-daily" data-aos="fade-up" data-aos-delay="100">
+                <div class="pricing-card trial glass-panel" id="card-daily" data-aos="fade-up" data-aos-delay="100">
+                    <div class="trial-tag">BEST FOR TESTING</div>
                     <div class="card-glow"></div>
                     <div class="card-content">
                         <div class="plan-header">
@@ -257,7 +262,8 @@
                         <ul class="plan-features">
                             <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 24 Hours Access</li>
                             <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Full Feature Access</li>
-                            <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Standard Support</li>
+                            <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Standard Support (24h max)</li>
+                            <li style="color: rgba(255,255,255,0.4);"><svg viewBox="0 0 20 20" style="fill: #ef4444;"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg> China not supported yet</li>
                         </ul>
                         <button class="btn-purchase add-to-cart" data-id="daily" data-name="Daily Plan" data-price="8.99">Add to Cart</button>
                     </div>
@@ -281,7 +287,8 @@
                         <ul class="plan-features">
                             <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 3 Days Access</li>
                             <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Full Feature Access</li>
-                            <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Standard Support</li>
+                            <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Standard Support (24h max)</li>
+                            <li style="color: rgba(255,255,255,0.4);"><svg viewBox="0 0 20 20" style="fill: #ef4444;"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg> China not supported yet</li>
                         </ul>
                         <button class="btn-purchase add-to-cart" data-id="3day" data-name="3 Days Plan" data-price="16.99">Add to Cart</button>
                     </div>
@@ -305,7 +312,8 @@
                         <ul class="plan-features">
                             <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 7 Days Access</li>
                             <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Full Feature Access</li>
-                            <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Standard Support</li>
+                            <li><svg viewBox="0 0 20 20"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Standard Support (24h max)</li>
+                            <li style="color: rgba(255,255,255,0.4);"><svg viewBox="0 0 20 20" style="fill: #ef4444;"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg> China not supported yet</li>
                         </ul>
                         <button class="btn-purchase add-to-cart" data-id="weekly" data-name="Weekly Plan" data-price="21.99">Add to Cart</button>
                     </div>
@@ -330,19 +338,12 @@
                         <ul class="plan-features">
                             <li><svg viewBox="0 0 20 20" class="accent-svg"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> 30 Days Access</li>
                             <li><svg viewBox="0 0 20 20" class="accent-svg"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Full Feature Access</li>
-                            <li><svg viewBox="0 0 20 20" class="accent-svg"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Priority VIP Support</li>
+                            <li><svg viewBox="0 0 20 20" class="accent-svg"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Priority Support (max 2h)</li>
                             <li><svg viewBox="0 0 20 20" class="accent-svg"><path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"/></svg> Save 65% Over Daily</li>
+                            <li style="color: rgba(255,255,255,0.4);"><svg viewBox="0 0 20 20" style="fill: #ef4444;"><path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/></svg> China not supported yet</li>
                         </ul>
                         
-                        <div style="margin-bottom: 15px; background: rgba(236, 72, 153, 0.05); border: 1px solid rgba(236, 72, 153, 0.2); padding: 12px; border-radius: 8px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-size: 0.9rem; color: #ec4899; font-weight: 600;">+ Unique Build</span>
-                                <span style="font-size: 0.85rem; color: var(--text-muted);"><s style="font-size: 0.8em; opacity: 0.6; margin-right: 6px;">+$45</s>+$24.01</span>
-                            </div>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0; margin-bottom: 10px; line-height: 1.4;">Custom polymorphic loader generated exclusively for you to bypass signature scans.</p>
-                            <button class="btn-purchase add-to-cart" data-id="monthly-vip" data-name="Monthly + Unique Build" data-price="70" style="padding: 8px; font-size: 0.85rem; background: rgba(236, 72, 153, 0.1); color: #ec4899; border: 1px solid rgba(236, 72, 153, 0.3); border-radius: 6px; width: 100%;">Add VIP Bundle ($70)</button>
-                        </div>
-                        
+
                         <button class="btn-primary btn-purchase add-to-cart" data-id="monthly" data-name="Monthly Plan" data-price="45.99">Add Standard ($45.99)</button>
                     </div>
                 </div>
