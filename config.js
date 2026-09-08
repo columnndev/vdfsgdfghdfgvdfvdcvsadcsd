@@ -9,5 +9,5 @@ const CONFIG = {
     loaderEnabled: false,
     
     // Message to show if the loader is disabled (e.g., when updating)
-    disabledMessage: "Overwatch just updated to build 152850. We are currently updating offsets. Please check Discord for ETA."
+    disabledMessage: "Overwatch just updated to build 153480. We are currently updating offsets. Please check Discord for ETA."
 };
